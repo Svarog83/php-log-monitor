@@ -44,6 +44,9 @@ final class LogMonitor
     {
         $this->debugLogger->start("Starting LogMonitor for project: {$this->project->name}");
         
+        // Initialize by finding the latest log file
+        $this->initializeLatestLogFile();
+        
         $this->monitoringLoop->start();
         
         $this->debugLogger->success("LogMonitor started successfully for project: {$this->project->name}");
@@ -68,7 +71,12 @@ final class LogMonitor
         $this->debugLogger->cycle("Monitoring cycle started for project: {$this->project->name}");
         
         try {
-            $this->checkForNewLogFiles();
+            // Only check for new files if we don't have a current file or if current file is no longer accessible
+            if ($this->currentLogFile === null || !$this->isCurrentFileAccessible()) {
+                $this->debugLogger->search("Current file not available, searching for latest log file");
+                $this->findAndSwitchToLatestLogFile();
+            }
+            
             $this->monitorCurrentLogFile();
             
             $this->debugLogger->success("Monitoring cycle completed for project: {$this->project->name}");
@@ -87,9 +95,22 @@ final class LogMonitor
         return false; // Continue monitoring
     }
 
-    private function checkForNewLogFiles(): void
+    private function initializeLatestLogFile(): void
     {
-        $this->debugLogger->search("Checking for new log files in project: {$this->project->name}");
+        $this->debugLogger->start("Initializing latest log file for project: {$this->project->name}");
+        
+        $this->findAndSwitchToLatestLogFile();
+        
+        if ($this->currentLogFile !== null) {
+            $this->debugLogger->success("Initialized with log file: {$this->currentLogFile->filename}");
+        } else {
+            $this->debugLogger->warning("No log files found during initialization");
+        }
+    }
+
+    private function findAndSwitchToLatestLogFile(): void
+    {
+        $this->debugLogger->search("Finding latest log file across all monitored directories");
         
         $allLogFiles = [];
         
@@ -112,6 +133,8 @@ final class LogMonitor
         
         if ($latestLogFile === null) {
             $this->debugLogger->warning("No log files found in any monitored directory");
+            $this->currentLogFile = null;
+            $this->lastPosition = 0;
             return;
         }
 
@@ -128,6 +151,21 @@ final class LogMonitor
             $this->switchToNewLogFile($latestLogFile);
         } else {
             $this->debugLogger->success("Current log file is still the latest: {$this->currentLogFile->filename}");
+        }
+    }
+
+    private function isCurrentFileAccessible(): bool
+    {
+        if ($this->currentLogFile === null) {
+            return false;
+        }
+
+        try {
+            $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
+            return $currentSize >= 0; // If we can get the size, file is accessible
+        } catch (\Exception $e) {
+            $this->debugLogger->warning("Current file is no longer accessible: {$this->currentLogFile->filename} - " . $e->getMessage());
+            return false;
         }
     }
 

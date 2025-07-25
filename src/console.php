@@ -21,22 +21,11 @@ try {
     // Load environment configuration
     $envConfig = new EnvironmentConfiguration('.env');
 
-    // Configure Symfony VarDumper based on debug flag
-    if ($isDebug) {
-        // Use CLI dumper for debug output
-        VarDumper::setHandler(function ($var) {
-            $cloner = new VarCloner();
-            $dumper = new CliDumper();
-            $dumper->dump($cloner->cloneVar($var));
-        });
-    } elseif ($envConfig->getVarDumperFormat() === 'server') {
-        // Use server dumper for normal operation
-        VarDumper::setHandler(function ($var) use ($envConfig) {
-            $cloner = new VarCloner();
-            $dumper = new ServerDumper($envConfig->getVarDumperServer());
-            $dumper->dump($cloner->cloneVar($var));
-        });
-    }
+    VarDumper::setHandler(function ($var) use ($envConfig) {
+        $cloner = new VarCloner();
+        $dumper = new ServerDumper($envConfig->getVarDumperServer());
+        $dumper->dump($cloner->cloneVar($var));
+    });
 
     $application = new Application('Log Monitor', '1.0.0');
     $application->add(new MonitorCommand());
