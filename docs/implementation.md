@@ -2,7 +2,7 @@
 
 ## Implementation Strategy
 
-The solution uses a **periodic monitoring approach** with **async file operations** to achieve non-blocking, efficient log file monitoring.
+The solution uses a **periodic monitoring approach** with **true async file operations** to achieve non-blocking, efficient log file monitoring.
 
 ## Core Implementation Components
 
@@ -24,6 +24,7 @@ The solution uses a **periodic monitoring approach** with **async file operation
 
 **amphp Integration**:
 - Uses `Amp\delay()` for non-blocking delays
+- Uses `amphp/file` for true async file operations
 - Periodic operations don't block the main thread
 - Efficient resource utilization
 
@@ -32,7 +33,22 @@ The solution uses a **periodic monitoring approach** with **async file operation
 - Automatic pause/resume functionality
 - Built-in error handling and recovery
 
-### 3. Log File Detection
+### 3. Async File Operations
+
+**amphp/file Implementation**:
+- `Filesystem::listFiles()` for async directory scanning
+- `Filesystem::getStatus()` for async file metadata
+- `Filesystem::openFile()` for async file reading
+- `File::seek()` and `File::read()` for async content reading
+- Automatic driver selection (UV, EIO, or Parallel)
+
+**Benefits of Async File I/O**:
+- Non-blocking file operations
+- Better performance under high I/O load
+- Scalable to multiple concurrent operations
+- Proper error handling with exceptions
+
+### 4. Log File Detection
 
 **Pattern Matching**:
 - Supports glob patterns (e.g., `logstash-*.json`)
@@ -44,7 +60,7 @@ The solution uses a **periodic monitoring approach** with **async file operation
 - Automatically switches to newest file
 - Maintains monitoring continuity
 
-### 4. Log Entry Processing
+### 5. Log Entry Processing
 
 **JSON Parsing**:
 - Expects JSON log entries (one per line)
@@ -58,10 +74,10 @@ The solution uses a **periodic monitoring approach** with **async file operation
 
 ## Key Implementation Decisions
 
-### 1. Native PHP vs Async File Operations
+### 1. Async File Operations vs Native PHP
 
-**Decision**: Use native PHP file operations
-**Reason**: Simpler implementation, better compatibility, sufficient performance for monitoring use case
+**Decision**: Use amphp/file for true async file operations
+**Reason**: Non-blocking I/O, better performance, proper async architecture
 
 ### 2. Periodic Scanning vs File System Events
 
@@ -84,6 +100,7 @@ The solution uses a **periodic monitoring approach** with **async file operation
 2. **Minimal Directory Scanning**: Scan only when needed
 3. **Configurable Intervals**: Adjust monitoring frequency per use case
 4. **Memory Management**: Process logs line by line, don't load entire files
+5. **Async I/O**: Non-blocking file operations prevent thread blocking
 
 ## Error Handling Strategy
 

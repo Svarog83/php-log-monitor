@@ -6,38 +6,39 @@ namespace App\Infrastructure\FileSystem;
 
 use App\Domain\Model\LogFile;
 use App\Domain\Repository\LogFileRepository;
+use Amp\File\File;
+use Amp\File\Filesystem;
 use DateTimeImmutable;
 
+use function Amp\File\filesystem;
+
 /**
- * Implementation of LogFileRepository using native PHP file operations
+ * Async implementation of LogFileRepository using amphp/file
  */
 final class LogFileFinder implements LogFileRepository
 {
+    private Filesystem $filesystem;
+
+    public function __construct(?Filesystem $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? filesystem();
+    }
+
     public function findLogFiles(string $directory, string $pattern): array
     {
         $files = [];
         $pattern = str_replace('*', '.*', $pattern);
         $pattern = '/^' . $pattern . '$/';
 
-        if (!is_dir($directory)) {
-            return [];
-        }
-
-        $entries = scandir($directory);
-        if ($entries === false) {
-            return [];
-        }
-
-        foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') {
-                continue;
-            }
-
-            if (preg_match($pattern, $entry)) {
-                $filePath = $directory . '/' . $entry;
-                if (is_file($filePath)) {
-                    $stat = stat($filePath);
-                    if ($stat !== false) {
+        try {
+            $entries = $this->filesystem->listFiles($directory);
+            
+            foreach ($entries as $entry) {
+                if (preg_match($pattern, $entry)) {
+                    $filePath = $directory . '/' . $entry;
+                    $stat = $this->filesystem->getStatus($filePath);
+                    
+                    if ($stat !== null && $this->filesystem->isFile($filePath)) {
                         $lastModified = DateTimeImmutable::createFromFormat('U', (string) $stat['mtime']);
                         if ($lastModified !== false) {
                             $files[] = new LogFile(
@@ -50,6 +51,9 @@ final class LogFileFinder implements LogFileRepository
                     }
                 }
             }
+        } catch (\Exception) {
+            // Directory might not exist or be inaccessible
+            return [];
         }
 
         return $files;
@@ -76,34 +80,34 @@ final class LogFileFinder implements LogFileRepository
 
     public function readNewLines(LogFile $logFile, int $lastPosition): array
     {
-        if (!file_exists($logFile->path)) {
+        try {
+            $file = $this->filesystem->openFile($logFile->path, 'r');
+            $file->seek($lastPosition);
+            
+            $content = $file->read();
+            $file->close();
+            
+            if ($content === null) {
+                return [];
+            }
+
+            $lines = explode("\n", $content);
+            return array_filter($lines, fn(string $line) => !empty(trim($line)));
+        } catch (\Exception) {
             return [];
         }
-
-        $handle = fopen($logFile->path, 'r');
-        if ($handle === false) {
-            return [];
-        }
-
-        fseek($handle, $lastPosition);
-        $content = stream_get_contents($handle);
-        fclose($handle);
-
-        if ($content === false || $content === '') {
-            return [];
-        }
-
-        $lines = explode("\n", $content);
-        return array_filter($lines, fn(string $line) => !empty(trim($line)));
     }
 
     public function getFileSize(LogFile $logFile): int
     {
-        if (!file_exists($logFile->path)) {
+        try {
+            $stat = $this->filesystem->getStatus($logFile->path);
+            if ($stat === null) {
+                return 0;
+            }
+            return $stat['size'] ?? 0;
+        } catch (\Exception) {
             return 0;
         }
-
-        $size = filesize($logFile->path);
-        return $size !== false ? $size : 0;
     }
 } 
