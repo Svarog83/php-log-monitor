@@ -1,0 +1,17 @@
+projects:
+  myapp:
+    directories:
+      - /var/log/myapp
+      - /opt/myapp/logs
+    log_pattern: "logstash-*.json"
+  
+  api:
+    directories:
+      - /var/log/api
+    log_pattern: "api-*.json"
+  
+  web:
+    directories:
+      - /var/log/nginx
+      - /var/log/apache
+    log_pattern: "access-*.log" 
