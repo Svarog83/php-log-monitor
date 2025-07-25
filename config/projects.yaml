@@ -1,17 +1,10 @@
 projects:
-  myapp:
+  loopLog:
     directories:
-      - /var/log/myapp
-      - /opt/myapp/logs
+      - /var/log
     log_pattern: "logstash-*.json"
   
-  api:
+  checkout:
     directories:
-      - /var/log/api
-    log_pattern: "api-*.json"
-  
-  web:
-    directories:
-      - /var/log/nginx
-      - /var/log/apache
-    log_pattern: "access-*.log" 
+      - /Users/checkito/workspace/checkout1/data/log
+    log_pattern: "logstash-*.json"

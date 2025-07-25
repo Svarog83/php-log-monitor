@@ -72,6 +72,32 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 - Preserves metadata and context
 - Structured logging with source file information
 
+### 6. Enhanced Logging System
+
+**Multi-Handler Logging**:
+- File logging with JSON formatter
+- Console output with JSON formatter
+- Buggregator integration for real-time debugging
+
+**Buggregator Integration**:
+- Custom SocketHandler for TCP connection
+- JSON formatter for structured output
+- Error suppression for connection issues
+- Configurable host and port
+
+**Symfony VarDumper Integration**:
+- Server dumper for remote debugging
+- Configurable via environment variables
+- Automatic initialization on startup
+
+### 7. Environment Configuration
+
+**Configuration Management**:
+- `.env` file support via Symfony Dotenv
+- Environment-specific settings
+- Default values for all configurations
+- Type-safe configuration access
+
 ## Key Implementation Decisions
 
 ### 1. Async File Operations vs Native PHP
@@ -94,6 +120,11 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 **Decision**: Multiple instances per project
 **Reason**: Better isolation, independent error handling, easier debugging
 
+### 5. Enhanced Logging vs Simple Output
+
+**Decision**: Multi-handler logging with Buggregator
+**Reason**: Better debugging capabilities, structured logging, real-time monitoring
+
 ## Performance Optimizations
 
 1. **Efficient File Reading**: Only read new content since last position
@@ -101,6 +132,8 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 3. **Configurable Intervals**: Adjust monitoring frequency per use case
 4. **Memory Management**: Process logs line by line, don't load entire files
 5. **Async I/O**: Non-blocking file operations prevent thread blocking
+6. **JSON Formatting**: Efficient structured logging
+7. **Connection Pooling**: Persistent connections where possible
 
 ## Error Handling Strategy
 
@@ -108,10 +141,12 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 2. **Logging**: Record errors in application logs
 3. **Recovery**: Automatic retry on temporary failures
 4. **Validation**: Validate configuration and file paths early
+5. **Connection Error Suppression**: Handle network issues gracefully
 
 ## Testing Approach
 
 1. **Unit Tests**: Test individual components
 2. **Integration Tests**: Test component interactions
 3. **Configuration Tests**: Validate YAML parsing
-4. **Error Scenarios**: Test error handling paths 
+4. **Error Scenarios**: Test error handling paths
+5. **Environment Tests**: Test configuration loading 

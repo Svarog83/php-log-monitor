@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console;
 
+use App\Application\Configuration\EnvironmentConfiguration;
 use App\Application\Configuration\ProjectConfiguration;
 use App\Application\Monitoring\LogMonitor;
 use App\Infrastructure\FileSystem\LogFileFinder;
+use App\Infrastructure\Logging\LoggerFactory;
 use App\Infrastructure\Logging\MonologAdapter;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 final class MonitorCommand extends Command
 {
+    protected static string $defaultName = 'monitor';
     protected static string $defaultDescription = 'Monitor log files for changes';
 
     public function __construct()
@@ -34,7 +35,7 @@ final class MonitorCommand extends Command
             ->addArgument('config', InputArgument::REQUIRED, 'Path to configuration file')
             ->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'Specific project to monitor')
             ->addOption('interval', 'i', InputOption::VALUE_REQUIRED, 'Scan interval in seconds', '1.0')
-            ->addOption('log-file', 'l', InputOption::VALUE_REQUIRED, 'Log file path', 'php://stdout');
+            ->addOption('env-file', 'e', InputOption::VALUE_REQUIRED, 'Environment file path', '.env');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -58,19 +59,22 @@ final class MonitorCommand extends Command
         }
         $interval = (float) $intervalOption;
 
-        $logFileOption = $input->getOption('log-file');
-        if (!is_string($logFileOption)) {
-            $output->writeln('<error>Log file must be a string</error>');
+        $envFileOption = $input->getOption('env-file');
+        if (!is_string($envFileOption)) {
+            $output->writeln('<error>Environment file must be a string</error>');
             return Command::FAILURE;
         }
 
         try {
-            // Load configuration
+            // Load environment configuration
+            $envConfig = new EnvironmentConfiguration($envFileOption);
+
+            // Load project configuration
             $config = ProjectConfiguration::fromYamlFile($configPath);
-            
-            // Setup logger
-            $logger = new Logger('log-monitor');
-            $logger->pushHandler(new StreamHandler($logFileOption));
+
+            // Setup logger factory and create logger
+            $loggerFactory = new LoggerFactory($envConfig);
+            $logger = $loggerFactory->createConsoleLogger();
             $monologAdapter = new MonologAdapter($logger);
 
             // Setup file finder

@@ -42,7 +42,6 @@ final class MonologAdapter
             'error' => Level::Error,
             'warning' => Level::Warning,
             'notice' => Level::Notice,
-            'info' => Level::Info,
             'debug' => Level::Debug,
             default => Level::Info,
         };
