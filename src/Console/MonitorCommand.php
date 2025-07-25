@@ -8,6 +8,7 @@ use App\Application\Configuration\EnvironmentConfiguration;
 use App\Application\Configuration\ProjectConfiguration;
 use App\Application\Monitoring\LogMonitor;
 use App\Infrastructure\FileSystem\LogFileFinder;
+use App\Infrastructure\Logging\DebugLogger;
 use App\Infrastructure\Logging\LoggerFactory;
 use App\Infrastructure\Logging\MonologAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -35,11 +36,14 @@ final class MonitorCommand extends Command
             ->addArgument('config', InputArgument::REQUIRED, 'Path to configuration file')
             ->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'Specific project to monitor')
             ->addOption('interval', 'i', InputOption::VALUE_REQUIRED, 'Scan interval in seconds', '1.0')
-            ->addOption('env-file', 'e', InputOption::VALUE_REQUIRED, 'Environment file path', '.env');
+            ->addOption('env-file', 'e', InputOption::VALUE_REQUIRED, 'Environment file path', '.env')
+            ->addOption('debug', 'd', InputOption::VALUE_NONE, 'Enable debug output');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $isDebug = (bool) $input->getOption('debug');
+        
         $configPath = $input->getArgument('config');
         if (!is_string($configPath)) {
             $output->writeln('<error>Config path must be a string</error>');
@@ -72,13 +76,14 @@ final class MonitorCommand extends Command
             // Load project configuration
             $config = ProjectConfiguration::fromYamlFile($configPath);
 
-            // Setup logger factory and create logger
+            // Setup logger factory and create loggers
             $loggerFactory = new LoggerFactory($envConfig);
-            $logger = $loggerFactory->createConsoleLogger();
-            $monologAdapter = new MonologAdapter($logger);
+            $appLogger = $loggerFactory->createConsoleLogger();
+            $debugLogger = new DebugLogger($isDebug, $loggerFactory->createDebugLogger());
+            $monologAdapter = new MonologAdapter($appLogger);
 
             // Setup file finder
-            $fileFinder = new LogFileFinder();
+            $fileFinder = new LogFileFinder(null, $debugLogger);
 
             $monitors = [];
 
@@ -90,11 +95,11 @@ final class MonitorCommand extends Command
                     return Command::FAILURE;
                 }
 
-                $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval);
+                $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger);
             } else {
                 // Monitor all projects
                 foreach ($config->getProjects() as $project) {
-                    $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval);
+                    $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger);
                 }
             }
 
@@ -128,8 +133,9 @@ final class MonitorCommand extends Command
         \App\Domain\Model\Project $project,
         LogFileFinder $fileFinder,
         MonologAdapter $logger,
-        float $interval
+        float $interval,
+        DebugLogger $debugLogger
     ): LogMonitor {
-        return new LogMonitor($project, $fileFinder, $logger, $interval);
+        return new LogMonitor($project, $fileFinder, $logger, $debugLogger, $interval);
     }
 } 
