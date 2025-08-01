@@ -7,7 +7,6 @@ namespace App\Infrastructure\FileSystem;
 use App\Domain\Model\LogFile;
 use App\Domain\Repository\LogFileRepository;
 use App\Infrastructure\Logging\DebugLogger;
-use Amp\File\File;
 use Amp\File\Filesystem;
 use DateTimeImmutable;
 

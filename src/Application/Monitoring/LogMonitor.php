@@ -184,22 +184,6 @@ final class LogMonitor
         }
     }
 
-    private function isCurrentFileAccessible(): bool
-    {
-        if ($this->currentLogFile === null) {
-            return false;
-        }
-
-        try {
-            $this->debugLogger->info("Checking if current file is accessible: {$this->currentLogFile->filename}");;
-            $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
-            return $currentSize >= 0; // If we can get the size, file is accessible
-        } catch (\Exception $e) {
-            $this->debugLogger->warning("Current file is no longer accessible: {$this->currentLogFile->filename} - " . $e->getMessage());
-            return false;
-        }
-    }
-
     private function switchToNewLogFile(LogFile $newLogFile): void
     {
         if ($this->currentLogFile !== null) {
