@@ -71,8 +71,6 @@ final class LogMonitor
     {
         $this->debugLogger->stop("Stopping LogMonitor for project: {$this->project->name}");
         
-        $this->forceSavePosition();
-        
         $this->monitoringLoop->stop();
         
         $this->debugLogger->success("LogMonitor stopped for project: {$this->project->name}");

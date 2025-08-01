@@ -51,11 +51,6 @@ final class LogFileFinder implements LogFileRepository
                                 size: $stat['size']
                             );
                             
-                            $this->debugLogger->data("Created LogFile object for: {$entry}");
-                            $this->debugLogger->data("Path: {$filePath}");
-                            $this->debugLogger->size("Size: {$stat['size']} bytes");
-                            $this->debugLogger->time("Modified: " . $lastModified->format('Y-m-d H:i:s'));
-                            
                             $files[] = $logFile;
                         } else {
                             $this->debugLogger->warning("Failed to parse modification time for: {$entry}");
@@ -90,8 +85,6 @@ final class LogFileFinder implements LogFileRepository
                 $latest = $logFile;
             }
         }
-
-        $this->debugLogger->latest("Latest log file determined: {$latest->filename}");
 
         return $latest;
     }

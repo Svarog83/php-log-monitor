@@ -16,7 +16,7 @@ final class CachedPositionRepository implements PositionRepository
     private PositionRepository $fileRepository;
     private DebugLogger $debugLogger;
     private int $saveIntervalSeconds;
-    private float $lastSaveTime = 0.0;
+    private float|null $lastSaveTime = null;
     
     /**
      * @var array<string, FilePosition> In-memory cache of positions
@@ -36,7 +36,6 @@ final class CachedPositionRepository implements PositionRepository
         $this->fileRepository = $fileRepository;
         $this->saveIntervalSeconds = $saveIntervalSeconds;
         $this->debugLogger = $debugLogger ?? new DebugLogger();
-        $this->lastSaveTime = microtime(true);
     }
 
     public function savePosition(FilePosition $position): void
@@ -53,19 +52,18 @@ final class CachedPositionRepository implements PositionRepository
         $this->maybePersistToFile();
     }
 
-    public function loadPosition(string $filePath, string $projectName): ?FilePosition
+    public function loadPosition(string $logFile, string $projectName): ?FilePosition
     {
-        $cacheKey = $this->getCacheKey($filePath, $projectName);
+        $cacheKey = $this->getCacheKey($logFile, $projectName);
         
         // First check memory cache
         if (isset($this->positionCache[$cacheKey])) {
-            $this->debugLogger->position("Loading position from cache for file: {$filePath}");
             return $this->positionCache[$cacheKey];
         }
         
         // Fall back to file repository
-        $this->debugLogger->position("Loading position from file for file: {$filePath}");
-        $position = $this->fileRepository->loadPosition($filePath, $projectName);
+        $this->debugLogger->position("Loading position from file for file: {$logFile}");
+        $position = $this->fileRepository->loadPosition($logFile, $projectName);
         
         if ($position !== null) {
             // Cache the loaded position
@@ -77,23 +75,19 @@ final class CachedPositionRepository implements PositionRepository
 
     public function loadPositionsForProject(string $projectName): array
     {
-        $this->debugLogger->position("Loading all positions for project: {$projectName}");
-        
         // First, try to get from cache
         $cachedPositions = [];
-        foreach ($this->positionCache as $cacheKey => $position) {
+        foreach ($this->positionCache as $position) {
             if ($position->isForProject($projectName)) {
                 $cachedPositions[] = $position;
             }
         }
         
         if (!empty($cachedPositions)) {
-            $this->debugLogger->stats("Found " . count($cachedPositions) . " positions in cache for project");
             return $cachedPositions;
         }
         
         // Fall back to file repository
-        $this->debugLogger->position("Loading positions from file for project: {$projectName}");
         $positions = $this->fileRepository->loadPositionsForProject($projectName);
         
         // Cache all loaded positions
@@ -121,7 +115,7 @@ final class CachedPositionRepository implements PositionRepository
 
     public function deletePositionsForProject(string $projectName): void
     {
-        $this->debugLogger->position("Deleting all positions for project: {$projectName}");
+        $this->debugLogger->position("Deleting all positions for project: $projectName");
         
         // Remove from cache
         $keysToRemove = [];
@@ -181,7 +175,7 @@ final class CachedPositionRepository implements PositionRepository
             }
         }
         
-        $this->lastSaveTime = microtime(true);
+        $this->lastSaveTime = null;
     }
 
     /**
@@ -189,6 +183,10 @@ final class CachedPositionRepository implements PositionRepository
      */
     private function maybePersistToFile(): void
     {
+        if ($this->lastSaveTime === null) {
+            $this->lastSaveTime = microtime(true);
+            return;
+        }
         $currentTime = microtime(true);
         $timeSinceLastSave = $currentTime - $this->lastSaveTime;
         

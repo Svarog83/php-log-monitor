@@ -19,7 +19,7 @@ interface PositionRepository
     /**
      * Load position for a specific file and project
      */
-    public function loadPosition(string $filePath, string $projectName): ?FilePosition;
+    public function loadPosition(string $logFile, string $projectName): ?FilePosition;
 
     /**
      * Load all positions for a project

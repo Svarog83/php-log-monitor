@@ -32,9 +32,6 @@ final class FilePositionRepository implements PositionRepository
         $filename = $this->getPositionFilename($position->filePath, $position->projectName);
         $filePath = $this->storageDirectory . '/' . $filename;
         
-        $this->debugLogger->position("Saving position for file: {$position->filePath}");
-        $this->debugLogger->position("Position: {$position->position}");
-
         try {
             $data = $position->toArray();
             $jsonData = json_encode($data, JSON_PRETTY_PRINT);
@@ -49,22 +46,20 @@ final class FilePositionRepository implements PositionRepository
                 throw new \RuntimeException("Failed to write position file: {$filePath}");
             }
             
-            $this->debugLogger->success("Position saved successfully");
+            $this->debugLogger->success("Saved position for file: $position->filePath, Position: $position->position");
         } catch (\Exception $e) {
             $this->debugLogger->error("Failed to save position: " . $e->getMessage());
             throw $e;
         }
     }
 
-    public function loadPosition(string $filePath, string $projectName): ?FilePosition
+    public function loadPosition(string $logFile, string $projectName): ?FilePosition
     {
-        $filename = $this->getPositionFilename($filePath, $projectName);
+        $filename = $this->getPositionFilename($logFile, $projectName);
         $storagePath = $this->storageDirectory . '/' . $filename;
-        
-        $this->debugLogger->position("Loading position for file: {$filePath}");
 
         if (!file_exists($storagePath)) {
-            $this->debugLogger->warning("Position file does not exist");
+            $this->debugLogger->warning("Position FILE $storagePath file does not exist");
             return null;
         }
         
@@ -78,14 +73,14 @@ final class FilePositionRepository implements PositionRepository
             
             $data = json_decode($jsonData, true);
             
-            if ($data === null || !is_array($data)) {
+            if (!is_array($data)) {
                 $this->debugLogger->error("Failed to decode position data from JSON");
                 return null;
             }
             
             $position = FilePosition::fromArray($data);
             
-            $this->debugLogger->success("Position loaded successfully: {$position->position}");
+            $this->debugLogger->success("Position in $storagePath loaded successfully: {$position->position}");
             
             return $position;
         } catch (\Exception $e) {
@@ -96,8 +91,6 @@ final class FilePositionRepository implements PositionRepository
 
     public function loadPositionsForProject(string $projectName): array
     {
-        $this->debugLogger->position("Loading all positions for project: {$projectName}");
-        
         $positions = [];
         $pattern = $this->storageDirectory . '/' . $this->getProjectPattern($projectName);
         
@@ -107,8 +100,6 @@ final class FilePositionRepository implements PositionRepository
             $this->debugLogger->warning("Failed to find position files for project");
             return [];
         }
-        
-        $this->debugLogger->stats("Found " . count($files) . " position files for project");
         
         foreach ($files as $file) {
             try {
@@ -121,7 +112,7 @@ final class FilePositionRepository implements PositionRepository
                 
                 $data = json_decode($jsonData, true);
                 
-                if ($data === null || !is_array($data)) {
+                if (!is_array($data)) {
                     $this->debugLogger->warning("Failed to decode position data from: {$file}");
                     continue;
                 }
@@ -134,8 +125,6 @@ final class FilePositionRepository implements PositionRepository
                 $this->debugLogger->warning("Failed to load position from {$file}: " . $e->getMessage());
             }
         }
-        
-        $this->debugLogger->stats("Successfully loaded " . count($positions) . " positions");
         
         return $positions;
     }
@@ -155,8 +144,6 @@ final class FilePositionRepository implements PositionRepository
             } else {
                 $this->debugLogger->error("Failed to delete position file");
             }
-        } else {
-            $this->debugLogger->warning("Position file does not exist");
         }
     }
 

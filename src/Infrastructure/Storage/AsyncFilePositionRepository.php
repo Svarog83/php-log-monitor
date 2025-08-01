@@ -7,9 +7,7 @@ namespace App\Infrastructure\Storage;
 use App\Domain\Model\FilePosition;
 use App\Domain\Repository\PositionRepository;
 use App\Infrastructure\Logging\DebugLogger;
-use Amp\File\File;
 use Amp\File\Filesystem;
-use Amp\Promise;
 use function Amp\File\filesystem;
 
 /**
@@ -33,12 +31,10 @@ final class AsyncFilePositionRepository implements PositionRepository
 
     public function savePosition(FilePosition $position): void
     {
-        $filename = $this->getPositionFilename($position->filePath, $position->projectName);
+        $path = $position->filePath;
+        $filename = $this->getPositionFilename($path, $position->projectName);
         $filePath = $this->storageDirectory . '/' . $filename;
         
-        $this->debugLogger->position("Saving position for file: {$position->filePath}");
-        $this->debugLogger->position("Position: {$position->position}");
-
         try {
             $data = $position->toArray();
             $jsonData = json_encode($data, JSON_PRETTY_PRINT);
@@ -49,24 +45,22 @@ final class AsyncFilePositionRepository implements PositionRepository
             
             // Async file write
             $this->filesystem->write($filePath, $jsonData);
-            
-            $this->debugLogger->success("Position saved successfully");
+
+            $this->debugLogger->success("Saved ASYNC position for file: $path, Position: $position->position");
         } catch (\Exception $e) {
             $this->debugLogger->error("Failed to save position: " . $e->getMessage());
             throw $e;
         }
     }
 
-    public function loadPosition(string $filePath, string $projectName): ?FilePosition
+    public function loadPosition(string $logFile, string $projectName): ?FilePosition
     {
-        $filename = $this->getPositionFilename($filePath, $projectName);
+        $filename = $this->getPositionFilename($logFile, $projectName);
         $storagePath = $this->storageDirectory . '/' . $filename;
-        
-        $this->debugLogger->position("Loading position for file: {$filePath}");
 
         try {
             if (!$this->filesystem->exists($storagePath)) {
-                $this->debugLogger->warning("Position file does not exist");
+                $this->debugLogger->warning("Position ASYNC $storagePath file does not exist");
                 return null;
             }
             
@@ -79,14 +73,14 @@ final class AsyncFilePositionRepository implements PositionRepository
             
             $data = json_decode($jsonData, true);
             
-            if ($data === null || !is_array($data)) {
+            if (!is_array($data)) {
                 $this->debugLogger->error("Failed to decode position data from JSON");
                 return null;
             }
             
             $position = FilePosition::fromArray($data);
             
-            $this->debugLogger->success("Position loaded successfully: {$position->position}");
+            $this->debugLogger->success("Position ASYNC in $storagePath loaded successfully: {$position->position}");
             
             return $position;
         } catch (\Exception $e) {
@@ -97,11 +91,10 @@ final class AsyncFilePositionRepository implements PositionRepository
 
     public function loadPositionsForProject(string $projectName): array
     {
-        $this->debugLogger->position("Loading all positions for project: {$projectName}");
+        $this->debugLogger->position("Loading ASYNC all positions for project: {$projectName}");
         
         $positions = [];
-        $pattern = $this->storageDirectory . '/' . $this->getProjectPattern($projectName);
-        
+
         try {
             $files = $this->filesystem->listFiles($this->storageDirectory);
             
@@ -130,7 +123,7 @@ final class AsyncFilePositionRepository implements PositionRepository
                     
                     $data = json_decode($jsonData, true);
                     
-                    if ($data === null || !is_array($data)) {
+                    if (!is_array($data)) {
                         $this->debugLogger->warning("Failed to decode position data from: {$file}");
                         continue;
                     }
@@ -143,8 +136,6 @@ final class AsyncFilePositionRepository implements PositionRepository
                     $this->debugLogger->warning("Failed to load position from {$file}: " . $e->getMessage());
                 }
             }
-            
-            $this->debugLogger->stats("Successfully loaded " . count($positions) . " positions");
             
             return $positions;
         } catch (\Exception $e) {
@@ -164,8 +155,6 @@ final class AsyncFilePositionRepository implements PositionRepository
             if ($this->filesystem->exists($filePath)) {
                 $this->filesystem->deleteFile($filePath);
                 $this->debugLogger->success("Position deleted successfully");
-            } else {
-                $this->debugLogger->warning("Position file does not exist");
             }
         } catch (\Exception $e) {
             $this->debugLogger->error("Failed to delete position file: " . $e->getMessage());
