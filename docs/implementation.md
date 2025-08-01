@@ -8,17 +8,18 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 
 ### 1. File Monitoring Strategy
 
-**Approach**: Periodic scanning with file size tracking
-- Scan directories every N seconds (configurable interval)
-- Track file size to detect changes
-- Switch to newest file when detected
+**Approach**: Latest file tracking with startup initialization
+- Find latest log file once at startup
+- Monitor only the current latest file for changes
+- Switch to new file only when current becomes inaccessible
 - Read only new content since last position
 
 **Benefits**:
-- Minimal CPU usage
+- Minimal CPU usage (no continuous directory scanning)
 - No file system watchers required
 - Works across different operating systems
 - Simple and reliable
+- Improved performance with reduced I/O operations
 
 ### 2. Async Operations
 
@@ -57,8 +58,9 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 
 **Latest File Selection**:
 - Compares modification timestamps
-- Automatically switches to newest file
-- Maintains monitoring continuity
+- Finds latest file at startup only
+- Automatically switches to new file when current becomes inaccessible
+- Maintains monitoring continuity with minimal directory scanning
 
 ### 5. Log Entry Processing
 
@@ -128,12 +130,13 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 ## Performance Optimizations
 
 1. **Efficient File Reading**: Only read new content since last position
-2. **Minimal Directory Scanning**: Scan only when needed
-3. **Configurable Intervals**: Adjust monitoring frequency per use case
-4. **Memory Management**: Process logs line by line, don't load entire files
-5. **Async I/O**: Non-blocking file operations prevent thread blocking
-6. **JSON Formatting**: Efficient structured logging
-7. **Connection Pooling**: Persistent connections where possible
+2. **Smart File Tracking**: Find latest file at startup, monitor only that file
+3. **Minimal Directory Scanning**: Scan directories only when current file becomes inaccessible
+4. **Configurable Intervals**: Adjust monitoring frequency per use case
+5. **Memory Management**: Process logs line by line, don't load entire files
+6. **Async I/O**: Non-blocking file operations prevent thread blocking
+7. **JSON Formatting**: Efficient structured logging
+8. **Connection Pooling**: Persistent connections where possible
 
 ## Error Handling Strategy
 

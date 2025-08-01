@@ -68,6 +68,15 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 - **Symfony Console**: CLI framework
 - **Symfony YAML**: Configuration parsing
 
+## Monitoring Strategy
+
+The system uses an **efficient single-file monitoring approach**:
+
+1. **Startup Initialization**: Find the latest log file across all monitored directories
+2. **Single File Tracking**: Monitor only the current latest file for changes
+3. **Smart Switching**: Switch to new file only when current becomes inaccessible
+4. **Performance Focus**: Minimize I/O operations by avoiding continuous directory scanning
+
 ## SOLID Principles
 
 - **Single Responsibility**: Each class has one reason to change
