@@ -8,6 +8,7 @@ use App\Application\Configuration\EnvironmentConfiguration;
 use App\Application\Configuration\ProjectConfiguration;
 use App\Application\Monitoring\LogMonitor;
 use App\Domain\Model\PositionTracker;
+use App\Domain\Model\Project;
 use App\Infrastructure\FileSystem\LogFileFinder;
 use App\Infrastructure\Logging\DebugLogger;
 use App\Infrastructure\Logging\LoggerFactory;
@@ -18,6 +19,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+
+use function Amp\delay;
 
 /**
  * CLI command for log monitoring
@@ -135,7 +138,7 @@ final class MonitorCommand extends Command
                 if (function_exists('pcntl_signal_dispatch')) {
                     pcntl_signal_dispatch();
                 }
-                \Amp\delay(1);
+                delay(1);
             }
 
             // Graceful shutdown
@@ -213,7 +216,7 @@ final class MonitorCommand extends Command
     }
 
     private function createMonitor(
-        \App\Domain\Model\Project $project,
+        Project $project,
         LogFileFinder $fileFinder,
         MonologAdapter $logger,
         float $interval,

@@ -184,8 +184,6 @@ final class DebugLogger
     /** @param array<string, mixed> $context */
     private function log(string $message, array $context = []): void
     {
-        if ($this->logger !== null) {
-            $this->logger->debug($message, $context);
-        }
+        $this->logger?->debug($message, $context);
     }
 } 

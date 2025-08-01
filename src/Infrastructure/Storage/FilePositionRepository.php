@@ -71,7 +71,7 @@ final class FilePositionRepository implements PositionRepository
         }
         
         try {
-            $jsonData = file_get_contents($storagePath);
+            $jsonData = file_get_contents(filename: $storagePath);
             
             if ($jsonData === false) {
                 $this->debugLogger->error("Failed to read position file");
