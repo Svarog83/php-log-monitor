@@ -121,6 +121,7 @@ final class LogFileFinder implements LogFileRepository
     {
         try {
             // Use native PHP filesize() to get real-time file size without caching issues
+            clearstatcache(true, $logFile->path);
             $size = filesize($logFile->path);
 //            $this->debugLogger->warning('filesize = ' . $size);
             
@@ -135,4 +136,4 @@ final class LogFileFinder implements LogFileRepository
             return 0;
         }
     }
-} 
+}

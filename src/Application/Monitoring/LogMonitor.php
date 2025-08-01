@@ -153,13 +153,7 @@ final class LogMonitor
         
         $this->debugLogger->position("Loading saved positions for project: {$this->project->name}");
         
-        $savedPositions = $this->positionTracker->loadAllPositions();
-        
-        $this->debugLogger->stats("Loaded " . count($savedPositions) . " saved positions");
-        
-        foreach ($savedPositions as $position) {
-            $this->debugLogger->position("Saved position for: {$position->filePath} (pos: {$position->position})");
-        }
+        $this->positionTracker->loadAllPositions();
     }
 
     private function findAndSwitchToLatestLogFile(): void
@@ -251,8 +245,8 @@ final class LogMonitor
 
         // Check if file size has changed (indicating new content)
         $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
-        
-        $this->debugLogger->size("Current file size: {$currentSize} bytes");
+
+//        $this->debugLogger->size("Current file size: {$currentSize} bytes");
         
         if ($currentSize > $this->lastPosition) {
             $newContentSize = $currentSize - $this->lastPosition;
@@ -270,7 +264,7 @@ final class LogMonitor
             }
             
             $this->lastPosition = $currentSize;
-            
+
             // Save position if position tracking is enabled
             if ($this->positionTracker !== null) {
                 $this->positionTracker->updatePosition($this->currentLogFile->path, $this->lastPosition);

@@ -175,7 +175,6 @@ final class CachedPositionRepository implements PositionRepository
             try {
                 $this->fileRepository->savePosition($position);
                 $this->dirtyPositions[$cacheKey] = false;
-                $this->debugLogger->success("Saved position for: {$position->filePath}");
             } catch (\Exception $e) {
                 $this->debugLogger->error("Failed to save position for {$position->filePath}: " . $e->getMessage());
                 // Keep it dirty so we can retry later

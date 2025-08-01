@@ -40,4 +40,4 @@ interface LogFileRepository
      * Get current file size
      */
     public function getFileSize(LogFile $logFile): int;
-} 
+}
