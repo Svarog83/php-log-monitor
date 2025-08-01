@@ -160,10 +160,6 @@ final class LogMonitor
         
         foreach ($this->project->getMonitoredDirectories() as $directory) {
             $logFiles = $this->logFileRepository->findLogFiles($directory, $this->project->getLogPattern());
-            foreach ($logFiles as $logFile) {
-                $this->debugLogger->data("  - {$logFile->filename} (size: {$logFile->size} bytes, modified: " . $logFile->lastModified->format('Y-m-d H:i:s') . ")");
-            }
-            
             $allLogFiles = array_merge($allLogFiles, $logFiles);
         }
 
