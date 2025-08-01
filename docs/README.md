@@ -9,6 +9,7 @@ This documentation serves as a memory bank for LLM interactions and project main
 - **[Implementation](./implementation.md)** - Implementation details and approaches
 - **[API Reference](./api-reference.md)** - Key classes and interfaces
 - **[Configuration](./configuration.md)** - Configuration format and options
+- **[Position Tracking](./position-tracking.md)** - Position tracking feature guide
 
 ## Quick Start
 

@@ -40,17 +40,24 @@ projects:
       - /var/log/myapp
       - /opt/myapp/logs
     log_pattern: "logstash-*.json"
+    position_storage:
+      type: "async-file"
+      path: "var/positions"
 
   api:
     directories:
       - /var/log/api
     log_pattern: "api-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
 
   web:
     directories:
       - /var/log/nginx
       - /var/log/apache
     log_pattern: "access-*.log"
+    # No position_storage = no position tracking
 ```
 
 ### Configuration Options
@@ -59,6 +66,7 @@ projects:
 |--------|------|----------|-------------|
 | `directories` | array | Yes | List of directories to monitor |
 | `log_pattern` | string | No | File pattern to match (default: `logstash-*.json`) |
+| `position_storage` | object | No | Position tracking configuration |
 
 ### Pattern Examples
 
@@ -66,6 +74,32 @@ projects:
 - `api-*.json` - Matches API log files
 - `access-*.log` - Matches access log files
 - `app-*.log` - Matches application log files
+
+### Position Storage Configuration
+
+Position tracking can be configured per project:
+
+```yaml
+position_storage:
+  type: "async-file"  # "file", "async-file", "redis", "database"
+  path: "var/positions"  # Storage path for file-based storage
+```
+
+#### Storage Types
+
+| Type | Description | Performance | Recommendation |
+|------|-------------|-------------|---------------|
+| `file` | Synchronous file storage | ⚠️ May block | Development/Testing |
+| `async-file` | Asynchronous file storage | ✅ Non-blocking | Production |
+| `redis` | Redis storage | ✅ High performance | Future |
+| `database` | Database storage | ✅ Scalable | Future |
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `type` | string | `file` | Storage backend type |
+| `path` | string | `var/positions` | Storage path (file storage) |
 
 ## CLI Usage
 

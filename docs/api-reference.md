@@ -26,11 +26,14 @@ final readonly class Project
     public function __construct(
         public string $name,
         public array $monitoredDirectories,
-        public string $logPattern = 'logstash-*.json'
+        public string $logPattern = 'logstash-*.json',
+        public array $positionStorage = []
     );
     
     public function getMonitoredDirectories(): array;
     public function getLogPattern(): string;
+    public function getPositionStorageConfig(): array;
+    public function isPositionTrackingEnabled(): bool;
 }
 ```
 
@@ -51,6 +54,44 @@ final readonly class LogEntry
 }
 ```
 
+### FilePosition
+```php
+final readonly class FilePosition
+{
+    public function __construct(
+        public string $filePath,
+        public int $position,
+        public DateTimeImmutable $lastUpdated,
+        public string $projectName
+    );
+    
+    public function updatePosition(int $newPosition): self;
+    public function isForFile(string $filePath): bool;
+    public function isForProject(string $projectName): bool;
+    public function toArray(): array;
+    public static function fromArray(array $data): self;
+}
+```
+
+### PositionTracker
+```php
+final class PositionTracker
+{
+    public function __construct(
+        private PositionRepository $positionRepository,
+        private string $projectName
+    );
+    
+    public function getPosition(string $filePath): int;
+    public function updatePosition(string $filePath, int $newPosition): void;
+    public function loadAllPositions(): array;
+    public function hasPosition(string $filePath): bool;
+    public function deletePosition(string $filePath): void;
+    public function deleteAllPositions(): void;
+    public function isPositionValid(FilePosition $position, LogFile $logFile): bool;
+}
+```
+
 ## Repository Interface
 
 ### LogFileRepository
@@ -61,6 +102,19 @@ interface LogFileRepository
     public function getLatestLogFile(array $logFiles): ?LogFile;
     public function readNewLines(LogFile $logFile, int $lastPosition): array;
     public function getFileSize(LogFile $logFile): int;
+}
+```
+
+### PositionRepository
+```php
+interface PositionRepository
+{
+    public function savePosition(FilePosition $position): void;
+    public function loadPosition(string $filePath, string $projectName): ?FilePosition;
+    public function loadPositionsForProject(string $projectName): array;
+    public function deletePosition(string $filePath, string $projectName): void;
+    public function deletePositionsForProject(string $projectName): void;
+    public function hasPosition(string $filePath, string $projectName): bool;
 }
 ```
 
@@ -77,6 +131,7 @@ final class LogMonitor
         private float $scanInterval = 1.0
     );
     
+    public function setPositionTracker(PositionTracker $positionTracker): void;
     public function start(): void;
     public function stop(): void;
     public function isRunning(): bool;

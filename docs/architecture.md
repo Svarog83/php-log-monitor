@@ -21,10 +21,10 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 ## Layer Responsibilities
 
 ### Domain Layer
-- **Models**: Core business entities (`LogFile`, `Project`, `LogEntry`)
-- **Repository Interface**: Abstract data access (`LogFileRepository`)
+- **Models**: Core business entities (`LogFile`, `Project`, `LogEntry`, `FilePosition`)
+- **Repository Interface**: Abstract data access (`LogFileRepository`, `PositionRepository`)
 - **Value Objects**: Immutable data structures
-- **Domain Services**: Business logic coordination
+- **Domain Services**: Business logic coordination (`PositionTracker`)
 
 ### Application Layer
 - **Configuration**: Project configuration management
@@ -35,6 +35,7 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 - **File System**: File operations and monitoring
 - **Logging**: Monolog integration and adapters
 - **Repository Implementation**: Concrete data access
+- **Storage**: Position tracking storage implementations
 
 ### Console Layer
 - **CLI Commands**: User interface and command handling
@@ -50,6 +51,7 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 ### 2. Adapter Pattern
 - MonologAdapter bridges domain and infrastructure
 - Consistent interface for different logging backends
+- PositionStorageFactory creates appropriate storage implementations
 
 ### 3. Value Object Pattern
 - Immutable domain objects
@@ -70,12 +72,14 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 
 ## Monitoring Strategy
 
-The system uses an **efficient single-file monitoring approach**:
+The system uses an **efficient single-file monitoring approach** with **position tracking**:
 
 1. **Startup Initialization**: Find the latest log file across all monitored directories
-2. **Single File Tracking**: Monitor only the current latest file for changes
-3. **Smart Switching**: Switch to new file only when current becomes inaccessible
-4. **Performance Focus**: Minimize I/O operations by avoiding continuous directory scanning
+2. **Position Loading**: Load saved positions for persistent tracking between runs
+3. **Single File Tracking**: Monitor only the current latest file for changes
+4. **Smart Switching**: Switch to new file only when current becomes inaccessible
+5. **Position Saving**: Save current position after processing new content
+6. **Performance Focus**: Minimize I/O operations by avoiding continuous directory scanning
 
 ## SOLID Principles
 
