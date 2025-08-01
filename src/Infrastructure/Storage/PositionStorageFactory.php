@@ -84,7 +84,7 @@ final class PositionStorageFactory
         $this->debugLogger->config("Storage directory: {$storagePath}");
         $this->debugLogger->config("Save interval: {$saveInterval}s");
         
-        $fileRepository = new FilePositionRepository($storagePath, $this->debugLogger);
+        $fileRepository = new AsyncFilePositionRepository($storagePath, null, $this->debugLogger);
         
         return new CachedPositionRepository($fileRepository, $saveInterval, $this->debugLogger);
     }
