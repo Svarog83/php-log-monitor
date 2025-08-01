@@ -31,8 +31,9 @@ projects:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `type` | string | `file` | Storage backend type (`file`, `async-file`, `redis`, `database`) |
+| `type` | string | `cached` | Storage backend type (`file`, `async-file`, `cached`, `redis`, `database`) |
 | `path` | string | `var/positions` | Storage path (for file storage) |
+| `save_interval_seconds` | int | `30` | Save interval in seconds (for cached storage) |
 
 ### Storage Backends
 
@@ -52,7 +53,7 @@ position_storage:
 - ⚠️ May impact performance under high load
 - ✅ Good for low-frequency updates
 
-#### Async File Storage (Recommended)
+#### Async File Storage
 
 Stores positions in JSON files using asynchronous I/O:
 
@@ -66,7 +67,26 @@ position_storage:
 - ✅ Non-blocking operations
 - ✅ Better performance under high load
 - ✅ Consistent with log file reading
-- ✅ Recommended for production use
+- ✅ Good for production use
+
+#### Cached Storage (Recommended)
+
+Stores positions in memory with periodic file writes:
+
+```yaml
+position_storage:
+  type: "cached"
+  path: "var/positions"
+  save_interval_seconds: 30
+```
+
+**Characteristics:**
+- ✅ Fast in-memory access
+- ✅ Reduced I/O overhead
+- ✅ Configurable save intervals
+- ✅ Graceful failure handling
+- ✅ Recommended for high-frequency updates
+- ✅ Automatic fallback to file storage
 
 **File Structure:**
 ```
@@ -85,6 +105,22 @@ var/positions/
   "project_name": "myapp"
 }
 ```
+
+### Cached Storage Implementation
+
+The cached storage uses a two-tier approach:
+
+1. **Memory Cache**: All positions are stored in memory for fast access
+2. **Periodic Persistence**: Positions are written to disk every X seconds
+3. **Dirty Tracking**: Only modified positions are written to disk
+4. **Graceful Degradation**: File write failures don't stop monitoring
+
+**Cache Behavior:**
+- Positions are immediately available in memory
+- File writes happen every `save_interval_seconds`
+- Failed writes are retried on next interval
+- Cache persists until application shutdown
+- Force save available for immediate persistence
 
 #### Redis Storage (Future)
 
@@ -189,7 +225,7 @@ The system is designed to be resilient:
 
 ## Performance Considerations
 
-### Async vs Sync Operations
+### Storage Type Comparison
 
 **Synchronous Storage (`type: "file"`):**
 - ⚠️ Can block monitoring operations
@@ -201,7 +237,15 @@ The system is designed to be resilient:
 - ✅ Non-blocking operations
 - ✅ Consistent with log file reading
 - ✅ Better performance under high load
-- ✅ Recommended for production use
+- ✅ Good for production use
+
+**Cached Storage (`type: "cached"`):**
+- ✅ Fastest access (in-memory)
+- ✅ Minimal I/O overhead
+- ✅ Configurable persistence frequency
+- ✅ Graceful failure handling
+- ✅ Recommended for high-frequency updates
+- ✅ Best for production environments
 
 ### General Performance Tips
 
@@ -210,6 +254,9 @@ The system is designed to be resilient:
 - **Lazy Loading**: Positions are loaded only when needed
 - **Batch Operations**: Multiple positions can be loaded at once
 - **Error Resilience**: Position failures don't stop monitoring
+- **Memory Caching**: Cached storage provides fastest access
+- **Configurable Persistence**: Adjust save intervals based on needs
+- **Dirty Tracking**: Only modified positions are written to disk
 
 ## Migration
 

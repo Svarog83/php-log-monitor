@@ -98,4 +98,15 @@ final class PositionTracker
         
         return $position->lastUpdated >= $cutoffTime;
     }
+
+    /**
+     * Force save any pending positions (for cached repositories)
+     */
+    public function forceSave(): void
+    {
+        // Check if the repository has a forceSave method (for cached repositories)
+        if (method_exists($this->positionRepository, 'forceSave')) {
+            $this->positionRepository->forceSave();
+        }
+    }
 } 

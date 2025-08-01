@@ -1,0 +1,28 @@
+projects:
+  demo-project:
+    directories:
+      - examples/logs
+    log_pattern: "*.log"
+    position_storage:
+      type: cached
+      path: var/positions-demo
+      save_interval_seconds: 15  # Save to file every 15 seconds
+  
+  production-project:
+    directories:
+      - /var/log/app1
+      - /var/log/app2
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: cached
+      path: var/positions-production
+      save_interval_seconds: 60  # Save to file every 60 seconds for production
+  
+  development-project:
+    directories:
+      - /tmp/dev-logs
+    log_pattern: "*.log"
+    position_storage:
+      type: cached
+      path: var/positions-dev
+      save_interval_seconds: 5   # Save to file every 5 seconds for development 

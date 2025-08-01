@@ -75,6 +75,12 @@ final class LogMonitor
         
         $this->monitoringLoop->stop();
         
+        // Force save any remaining positions before stopping
+        if ($this->positionTracker !== null) {
+            $this->debugLogger->position("Force saving positions before stopping");
+            $this->positionTracker->forceSave();
+        }
+        
         $this->debugLogger->success("LogMonitor stopped for project: {$this->project->name}");
     }
 
