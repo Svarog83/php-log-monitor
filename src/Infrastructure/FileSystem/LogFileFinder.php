@@ -165,13 +165,13 @@ final class LogFileFinder implements LogFileRepository
         $this->debugLogger->size("Getting file size for: {$logFile->filename}");
         
         try {
-            $stat = $this->filesystem->getStatus($logFile->path);
-            if ($stat === null) {
-                $this->debugLogger->warning("Could not get file status for: {$logFile->filename}");
+            // Use native PHP filesize() to get real-time file size without caching issues
+            $size = filesize($logFile->path);
+            
+            if ($size === false) {
+                $this->debugLogger->warning("Could not get file size for: {$logFile->filename}");
                 return 0;
             }
-            
-            $size = $stat['size'] ?? 0;
             
             $this->debugLogger->size("File size: {$size} bytes");
             
