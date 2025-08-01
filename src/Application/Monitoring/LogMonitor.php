@@ -73,15 +73,27 @@ final class LogMonitor
     {
         $this->debugLogger->stop("Stopping LogMonitor for project: {$this->project->name}");
         
-        $this->monitoringLoop->stop();
-        
         // Force save any remaining positions before stopping
         if ($this->positionTracker !== null) {
             $this->debugLogger->position("Force saving positions before stopping");
             $this->positionTracker->forceSave();
         }
         
+        $this->monitoringLoop->stop();
+        
         $this->debugLogger->success("LogMonitor stopped for project: {$this->project->name}");
+    }
+
+    /**
+     * Force save current position immediately (for graceful shutdown)
+     */
+    public function forceSavePosition(): void
+    {
+        if ($this->positionTracker !== null && $this->currentLogFile !== null) {
+            $this->debugLogger->position("Force saving current position for graceful shutdown");
+            $this->positionTracker->updatePosition($this->currentLogFile->path, $this->lastPosition);
+            $this->positionTracker->forceSave();
+        }
     }
 
     public function isRunning(): bool

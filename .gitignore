@@ -13,10 +13,12 @@ composer.lock
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs and positions
 *.log
 logs/
 var/log/
+var/positions/
+var/positions-demo/
 
 # Cache
 cache/

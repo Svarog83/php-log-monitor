@@ -27,6 +27,11 @@ final class MonitorCommand extends Command
     protected static string $defaultName = 'monitor';
     protected static string $defaultDescription = 'Monitor log files for changes';
 
+    /** @var array<LogMonitor> */
+    private array $monitors = [];
+    private bool $shutdownRequested = false;
+    private OutputInterface $output;
+
     public function __construct()
     {
         parent::__construct('monitor');
@@ -44,6 +49,7 @@ final class MonitorCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $this->output = $output;
         $isDebug = (bool) $input->getOption('debug');
         
         $configPath = $input->getArgument('config');
@@ -72,6 +78,9 @@ final class MonitorCommand extends Command
         }
 
         try {
+            // Setup signal handlers for graceful shutdown
+            $this->setupSignalHandlers();
+
             // Load environment configuration
             $envConfig = new EnvironmentConfiguration($envFileOption);
 
@@ -90,8 +99,6 @@ final class MonitorCommand extends Command
             // Setup position storage factory
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
-            $monitors = [];
-
             if ($projectName !== null) {
                 // Monitor specific project
                 $project = $config->getProject($projectName);
@@ -100,38 +107,109 @@ final class MonitorCommand extends Command
                     return Command::FAILURE;
                 }
 
-                $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
+                $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
             } else {
                 // Monitor all projects
                 foreach ($config->getProjects() as $project) {
-                    $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
+                    $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
                 }
             }
 
-            if (empty($monitors)) {
+            if (empty($this->monitors)) {
                 $output->writeln('<error>No projects to monitor</error>');
                 return Command::FAILURE;
             }
 
             $output->writeln('Starting log monitoring...');
-            $output->writeln('Monitoring ' . count($monitors) . ' project(s)');
-            $output->writeln('Press Ctrl+C to stop');
+            $output->writeln('Monitoring ' . count($this->monitors) . ' project(s)');
+            $output->writeln('Press Ctrl+C to stop gracefully');
 
             // Start all monitors
-            foreach ($monitors as $monitor) {
+            foreach ($this->monitors as $monitor) {
                 $monitor->start();
             }
 
             // Keep running until interrupted - this is intentional for a long-running process
-            /** @phpstan-ignore-next-line */
-            while (true) {
+            while (!$this->shutdownRequested) {
+                // Dispatch signals periodically to ensure they are handled
+                if (function_exists('pcntl_signal_dispatch')) {
+                    pcntl_signal_dispatch();
+                }
                 \Amp\delay(1);
             }
+
+            // Graceful shutdown
+            $this->performGracefulShutdown();
 
         } catch (\Exception $e) {
             $output->writeln("<error>Error: {$e->getMessage()}</error>");
             return Command::FAILURE;
         }
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Setup signal handlers for graceful shutdown
+     */
+    private function setupSignalHandlers(): void
+    {
+        // Handle SIGINT (Ctrl+C)
+        if (function_exists('pcntl_signal')) {
+            pcntl_signal(SIGINT, function () {
+                $this->handleShutdownSignal('SIGINT (Ctrl+C)');
+            });
+
+            // Handle SIGTERM (kill command)
+            pcntl_signal(SIGTERM, function () {
+                $this->handleShutdownSignal('SIGTERM');
+            });
+
+            // Handle SIGTSTP (Ctrl+Z) - suspend
+            pcntl_signal(SIGTSTP, function () {
+                $this->handleShutdownSignal('SIGTSTP (Ctrl+Z)');
+            });
+
+            // Enable signal handling
+            pcntl_signal_dispatch();
+        } else {
+            $this->output->writeln('<comment>Warning: pcntl extension not available. Signal handling disabled.</comment>');
+        }
+    }
+
+    /**
+     * Handle shutdown signals
+     */
+    private function handleShutdownSignal(string $signal): void
+    {
+        if ($this->shutdownRequested) {
+            return; // Already shutting down
+        }
+
+        $this->output->writeln("\n<info>Received {$signal}. Starting graceful shutdown...</info>");
+        $this->shutdownRequested = true;
+    }
+
+    /**
+     * Perform graceful shutdown of all monitors
+     */
+    private function performGracefulShutdown(): void
+    {
+        $this->output->writeln('<info>Stopping all monitors...</info>');
+
+        foreach ($this->monitors as $monitor) {
+            try {
+                // Force save current position immediately
+                $monitor->forceSavePosition();
+                
+                // Stop the monitor
+                $monitor->stop();
+            } catch (\Exception $e) {
+                $this->output->writeln("<error>Error stopping monitor: {$e->getMessage()}</error>");
+            }
+        }
+
+        $this->output->writeln('<info>Graceful shutdown completed. All positions saved.</info>');
     }
 
     private function createMonitor(
