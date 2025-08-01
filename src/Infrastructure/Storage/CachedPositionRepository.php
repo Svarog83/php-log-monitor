@@ -43,9 +43,8 @@ final class CachedPositionRepository implements PositionRepository
     {
         $cacheKey = $this->getCacheKey($position->filePath, $position->projectName);
         
-        $this->debugLogger->position("Caching position for file: {$position->filePath}");
-        $this->debugLogger->position("Position: {$position->position}");
-        
+        $this->debugLogger->position("Caching position for file: $position->filePath, Position: $position->position");
+
         // Store in memory cache
         $this->positionCache[$cacheKey] = $position;
         $this->dirtyPositions[$cacheKey] = true;
@@ -160,11 +159,8 @@ final class CachedPositionRepository implements PositionRepository
     public function forceSave(): void
     {
         if (empty($this->dirtyPositions)) {
-            $this->debugLogger->position("No dirty positions to save");
             return;
         }
-        
-        $this->debugLogger->position("Force saving " . count($this->dirtyPositions) . " dirty positions");
         
         foreach ($this->dirtyPositions as $cacheKey => $isDirty) {
             if (!$isDirty) {

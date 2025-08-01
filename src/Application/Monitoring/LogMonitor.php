@@ -38,7 +38,6 @@ final class LogMonitor
         
         $this->debugLogger->config("LogMonitor initialized for project: {$this->project->name}");
         $this->debugLogger->file("Monitored directories: " . implode(', ', $this->project->getMonitoredDirectories()));
-        $this->debugLogger->search("Log pattern: {$this->project->getLogPattern()}");
         $this->debugLogger->time("Scan interval: {$this->scanInterval} seconds");
         
         if ($this->project->isPositionTrackingEnabled()) {
@@ -54,7 +53,6 @@ final class LogMonitor
     public function setPositionTracker(PositionTracker $positionTracker): void
     {
         $this->positionTracker = $positionTracker;
-        $this->debugLogger->config("Position tracker set for project: {$this->project->name}");
     }
 
     public function start(): void
@@ -73,11 +71,7 @@ final class LogMonitor
     {
         $this->debugLogger->stop("Stopping LogMonitor for project: {$this->project->name}");
         
-        // Force save any remaining positions before stopping
-        if ($this->positionTracker !== null) {
-            $this->debugLogger->position("Force saving positions before stopping");
-            $this->positionTracker->forceSave();
-        }
+        $this->forceSavePosition();
         
         $this->monitoringLoop->stop();
         
@@ -103,18 +97,18 @@ final class LogMonitor
 
     private function monitorCallback(PeriodicLoop $loop): bool
     {
-        $this->debugLogger->cycle("Monitoring cycle started for project: {$this->project->name}");
+//        $this->debugLogger->cycle("Monitoring cycle started for project: {$this->project->name}");
         
         try {
             // Only check for new files if we don't have a current file or if current file is no longer accessible
-            if ($this->currentLogFile === null || !$this->isCurrentFileAccessible()) {
+            if ($this->currentLogFile === null) {
                 $this->debugLogger->search("Current file not available, searching for latest log file");
                 $this->findAndSwitchToLatestLogFile();
             }
             
             $this->monitorCurrentLogFile();
             
-            $this->debugLogger->success("Monitoring cycle completed for project: {$this->project->name}");
+//            $this->debugLogger->success("Monitoring cycle completed for project: {$this->project->name}");
         } catch (\Exception $e) {
             $this->debugLogger->error("Error in monitoring cycle for project {$this->project->name}: " . $e->getMessage());
             
@@ -170,24 +164,16 @@ final class LogMonitor
 
     private function findAndSwitchToLatestLogFile(): void
     {
-        $this->debugLogger->search("Finding latest log file across all monitored directories");
-        
         $allLogFiles = [];
         
         foreach ($this->project->getMonitoredDirectories() as $directory) {
-            $this->debugLogger->file("Scanning directory: {$directory}");
-            
             $logFiles = $this->logFileRepository->findLogFiles($directory, $this->project->getLogPattern());
-            
-            $this->debugLogger->stats("Found " . count($logFiles) . " log files in directory: {$directory}");
             foreach ($logFiles as $logFile) {
                 $this->debugLogger->data("  - {$logFile->filename} (size: {$logFile->size} bytes, modified: " . $logFile->lastModified->format('Y-m-d H:i:s') . ")");
             }
             
             $allLogFiles = array_merge($allLogFiles, $logFiles);
         }
-
-        $this->debugLogger->stats("Total log files found across all directories: " . count($allLogFiles));
 
         $latestLogFile = $this->logFileRepository->getLatestLogFile($allLogFiles);
         
@@ -202,15 +188,7 @@ final class LogMonitor
 
         // Check if we have a new latest log file
         if ($this->currentLogFile === null || $latestLogFile->isNewerThan($this->currentLogFile)) {
-            if ($this->currentLogFile === null) {
-                $this->debugLogger->target("Setting initial log file: {$latestLogFile->filename}");
-            } else {
-                $this->debugLogger->switch("Switching from {$this->currentLogFile->filename} to {$latestLogFile->filename}");
-            }
-            
             $this->switchToNewLogFile($latestLogFile);
-        } else {
-            $this->debugLogger->success("Current log file is still the latest: {$this->currentLogFile->filename}");
         }
     }
 
@@ -221,6 +199,7 @@ final class LogMonitor
         }
 
         try {
+            $this->debugLogger->info("Checking if current file is accessible: {$this->currentLogFile->filename}");;
             $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
             return $currentSize >= 0; // If we can get the size, file is accessible
         } catch (\Exception $e) {
@@ -270,9 +249,6 @@ final class LogMonitor
             return;
         }
 
-        $this->debugLogger->monitor("Monitoring current log file: {$this->currentLogFile->filename}");
-        $this->debugLogger->size("Last position: {$this->lastPosition}");
-
         // Check if file size has changed (indicating new content)
         $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
         
@@ -282,39 +258,23 @@ final class LogMonitor
             $newContentSize = $currentSize - $this->lastPosition;
             
             $this->debugLogger->size("File has grown by {$newContentSize} bytes");
-            $this->debugLogger->read("Reading new lines from position {$this->lastPosition}...");
-            
             $newLines = $this->logFileRepository->readNewLines($this->currentLogFile, $this->lastPosition);
             
-            $this->debugLogger->stats("Found " . count($newLines) . " new lines");
-            
-            $processedEntries = 0;
-            foreach ($newLines as $lineNumber => $line) {
-                $this->debugLogger->processing("Processing line " . ($lineNumber + 1) . ": " . substr($line, 0, 100) . (strlen($line) > 100 ? '...' : ''));
-                
-                $logEntry = LogEntry::fromJsonLine($line, $this->currentLogFile->filename, $this->debugLogger);
+            foreach ($newLines as $line) {
+                $logEntry = LogEntry::fromJsonLine($line, $this->currentLogFile->filename);
                 if ($logEntry !== null) {
-                    $this->debugLogger->success("Valid log entry found and processed");
                     $this->logger->logEntry($logEntry);
-                    $processedEntries++;
                 } else {
                     $this->debugLogger->warning("Invalid log entry format, skipping");
                 }
             }
-            
-            $this->debugLogger->stats("Processed {$processedEntries} valid log entries");
             
             $this->lastPosition = $currentSize;
             
             // Save position if position tracking is enabled
             if ($this->positionTracker !== null) {
                 $this->positionTracker->updatePosition($this->currentLogFile->path, $this->lastPosition);
-                $this->debugLogger->position("Saved position for {$this->currentLogFile->filename}: {$this->lastPosition}");
             }
-            
-            $this->debugLogger->size("Updated last position to: {$this->lastPosition}");
-        } else {
-            $this->debugLogger->success("No new content detected in log file");
         }
     }
 } 

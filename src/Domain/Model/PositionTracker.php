@@ -10,7 +10,7 @@ use DateTimeImmutable;
 /**
  * Domain service for managing file positions
  */
-final class PositionTracker
+final readonly class PositionTracker
 {
     public function __construct(
         private PositionRepository $positionRepository,
@@ -74,29 +74,6 @@ final class PositionTracker
     public function deleteAllPositions(): void
     {
         $this->positionRepository->deletePositionsForProject($this->projectName);
-    }
-
-    /**
-     * Validate if a position is still valid for a log file
-     * (e.g., file still exists and hasn't been rotated)
-     */
-    public function isPositionValid(FilePosition $position, LogFile $logFile): bool
-    {
-        // Check if the file path matches
-        if ($position->filePath !== $logFile->path) {
-            return false;
-        }
-
-        // Check if the position is within the current file size
-        if ($position->position > $logFile->size) {
-            return false;
-        }
-
-        // Check if the position is not too old (e.g., older than 24 hours)
-        $maxAge = new \DateInterval('PT24H');
-        $cutoffTime = (new DateTimeImmutable())->sub($maxAge);
-        
-        return $position->lastUpdated >= $cutoffTime;
     }
 
     /**

@@ -34,8 +34,7 @@ final class FilePositionRepository implements PositionRepository
         
         $this->debugLogger->position("Saving position for file: {$position->filePath}");
         $this->debugLogger->position("Position: {$position->position}");
-        $this->debugLogger->position("Storage file: {$filePath}");
-        
+
         try {
             $data = $position->toArray();
             $jsonData = json_encode($data, JSON_PRETTY_PRINT);
@@ -63,8 +62,7 @@ final class FilePositionRepository implements PositionRepository
         $storagePath = $this->storageDirectory . '/' . $filename;
         
         $this->debugLogger->position("Loading position for file: {$filePath}");
-        $this->debugLogger->position("Storage file: {$storagePath}");
-        
+
         if (!file_exists($storagePath)) {
             $this->debugLogger->warning("Position file does not exist");
             return null;
