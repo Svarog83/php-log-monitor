@@ -9,6 +9,8 @@ A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. M
 - **Modern Architecture**: Built with SOLID principles and DDD patterns
 - **Multiple Projects**: Monitor multiple projects simultaneously
 - **Real-time Monitoring**: Detects new log files and monitors changes
+- **Position Tracking**: Maintains file positions between runs to avoid reprocessing
+- **Flexible Storage**: Support for different position storage backends (file, Redis, database)
 - **Monolog Integration**: Forwards log entries to Monolog with proper level mapping
 
 ## Requirements
@@ -35,11 +37,17 @@ projects:
       - /var/log/myapp
       - /opt/myapp/logs
     log_pattern: "logstash-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
   
   api:
     directories:
       - /var/log/api
     log_pattern: "api-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
 ```
 
 ## Usage
@@ -90,6 +98,7 @@ The application follows Clean Architecture principles with clear separation of c
 - [Implementation](./docs/implementation.md) - Technical implementation details
 - [API Reference](./docs/api-reference.md) - Key classes and interfaces
 - [Configuration](./docs/configuration.md) - Configuration format and options
+- [Position Tracking](./docs/position-tracking.md) - Position tracking feature guide
 - [LLM Guide](./docs/llm-guide.md) - Quick reference for AI assistants
 
 ## Development

@@ -60,10 +60,16 @@ final class ProjectConfiguration
                 throw new \InvalidArgumentException("Log pattern must be a string");
             }
 
+            $positionStorage = $projectConfig['position_storage'] ?? [];
+            if (!is_array($positionStorage)) {
+                throw new \InvalidArgumentException("Position storage configuration must be an array");
+            }
+
             $projects[$projectName] = new Project(
                 name: $projectName,
                 monitoredDirectories: $directories,
-                logPattern: $logPattern
+                logPattern: $logPattern,
+                positionStorage: $positionStorage
             );
         }
 

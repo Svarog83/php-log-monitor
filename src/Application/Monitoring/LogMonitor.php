@@ -6,6 +6,7 @@ namespace App\Application\Monitoring;
 
 use App\Domain\Model\LogEntry;
 use App\Domain\Model\LogFile;
+use App\Domain\Model\PositionTracker;
 use App\Domain\Model\Project;
 use App\Domain\Repository\LogFileRepository;
 use App\Infrastructure\Logging\DebugLogger;
@@ -19,6 +20,7 @@ final class LogMonitor
 {
     private ?LogFile $currentLogFile = null;
     private int $lastPosition = 0;
+    private ?PositionTracker $positionTracker = null;
     private PeriodicLoop $monitoringLoop;
 
     public function __construct(
@@ -38,6 +40,21 @@ final class LogMonitor
         $this->debugLogger->file("Monitored directories: " . implode(', ', $this->project->getMonitoredDirectories()));
         $this->debugLogger->search("Log pattern: {$this->project->getLogPattern()}");
         $this->debugLogger->time("Scan interval: {$this->scanInterval} seconds");
+        
+        if ($this->project->isPositionTrackingEnabled()) {
+            $this->debugLogger->config("Position tracking is enabled for project: {$this->project->name}");
+        } else {
+            $this->debugLogger->config("Position tracking is disabled for project: {$this->project->name}");
+        }
+    }
+
+    /**
+     * Set the position tracker for this monitor
+     */
+    public function setPositionTracker(PositionTracker $positionTracker): void
+    {
+        $this->positionTracker = $positionTracker;
+        $this->debugLogger->config("Position tracker set for project: {$this->project->name}");
     }
 
     public function start(): void
@@ -99,12 +116,37 @@ final class LogMonitor
     {
         $this->debugLogger->start("Initializing latest log file for project: {$this->project->name}");
         
+        // Load saved positions if position tracking is enabled
+        if ($this->positionTracker !== null) {
+            $this->loadSavedPositions();
+        }
+        
         $this->findAndSwitchToLatestLogFile();
         
         if ($this->currentLogFile !== null) {
             $this->debugLogger->success("Initialized with log file: {$this->currentLogFile->filename}");
         } else {
             $this->debugLogger->warning("No log files found during initialization");
+        }
+    }
+
+    /**
+     * Load saved positions and validate them against current log files
+     */
+    private function loadSavedPositions(): void
+    {
+        if ($this->positionTracker === null) {
+            return;
+        }
+        
+        $this->debugLogger->position("Loading saved positions for project: {$this->project->name}");
+        
+        $savedPositions = $this->positionTracker->loadAllPositions();
+        
+        $this->debugLogger->stats("Loaded " . count($savedPositions) . " saved positions");
+        
+        foreach ($savedPositions as $position) {
+            $this->debugLogger->position("Saved position for: {$position->filePath} (pos: {$position->position})");
         }
     }
 
@@ -188,10 +230,19 @@ final class LogMonitor
         }
 
         $this->currentLogFile = $newLogFile;
-        $this->lastPosition = 0;
+        
+        // Load saved position if available, otherwise start from 0
+        if ($this->positionTracker !== null) {
+            $savedPosition = $this->positionTracker->getPosition($newLogFile->path);
+            $this->lastPosition = $savedPosition;
+            $this->debugLogger->position("Loaded saved position for {$newLogFile->filename}: {$savedPosition}");
+        } else {
+            $this->lastPosition = 0;
+            $this->debugLogger->size("Reset position to: 0 (no position tracking)");
+        }
         
         $this->debugLogger->success("Successfully switched to new log file: {$newLogFile->filename}");
-        $this->debugLogger->size("Reset position to: 0");
+        $this->debugLogger->size("Current position: {$this->lastPosition}");
     }
 
     private function monitorCurrentLogFile(): void
@@ -236,6 +287,12 @@ final class LogMonitor
             $this->debugLogger->stats("Processed {$processedEntries} valid log entries");
             
             $this->lastPosition = $currentSize;
+            
+            // Save position if position tracking is enabled
+            if ($this->positionTracker !== null) {
+                $this->positionTracker->updatePosition($this->currentLogFile->path, $this->lastPosition);
+                $this->debugLogger->position("Saved position for {$this->currentLogFile->filename}: {$this->lastPosition}");
+            }
             
             $this->debugLogger->size("Updated last position to: {$this->lastPosition}");
         } else {

@@ -7,10 +7,12 @@ namespace App\Console;
 use App\Application\Configuration\EnvironmentConfiguration;
 use App\Application\Configuration\ProjectConfiguration;
 use App\Application\Monitoring\LogMonitor;
+use App\Domain\Model\PositionTracker;
 use App\Infrastructure\FileSystem\LogFileFinder;
 use App\Infrastructure\Logging\DebugLogger;
 use App\Infrastructure\Logging\LoggerFactory;
 use App\Infrastructure\Logging\MonologAdapter;
+use App\Infrastructure\Storage\PositionStorageFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -85,6 +87,9 @@ final class MonitorCommand extends Command
             // Setup file finder
             $fileFinder = new LogFileFinder(null, $debugLogger);
 
+            // Setup position storage factory
+            $positionStorageFactory = new PositionStorageFactory($debugLogger);
+
             $monitors = [];
 
             if ($projectName !== null) {
@@ -95,11 +100,11 @@ final class MonitorCommand extends Command
                     return Command::FAILURE;
                 }
 
-                $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger);
+                $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
             } else {
                 // Monitor all projects
                 foreach ($config->getProjects() as $project) {
-                    $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger);
+                    $monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
                 }
             }
 
@@ -134,8 +139,19 @@ final class MonitorCommand extends Command
         LogFileFinder $fileFinder,
         MonologAdapter $logger,
         float $interval,
-        DebugLogger $debugLogger
+        DebugLogger $debugLogger,
+        PositionStorageFactory $positionStorageFactory
     ): LogMonitor {
-        return new LogMonitor($project, $fileFinder, $logger, $debugLogger, $interval);
+        $monitor = new LogMonitor($project, $fileFinder, $logger, $debugLogger, $interval);
+        
+        // Setup position tracking if enabled for this project
+        if ($project->isPositionTrackingEnabled()) {
+            $positionConfig = $project->getPositionStorageConfig();
+            $positionRepository = $positionStorageFactory->createRepository($positionConfig);
+            $positionTracker = new PositionTracker($positionRepository, $project->name);
+            $monitor->setPositionTracker($positionTracker);
+        }
+        
+        return $monitor;
     }
 } 

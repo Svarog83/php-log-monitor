@@ -1,7 +1,7 @@
 projects:
   loopLog:
     directories:
-      - /var/log
+      - /Users/checkito/workspace/it-training/loop/var/log
     log_pattern: "logstash-*.json"
   
   checkout:

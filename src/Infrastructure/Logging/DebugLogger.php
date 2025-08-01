@@ -176,6 +176,12 @@ final class DebugLogger
     }
 
     /** @param array<string, mixed> $context */
+    public function position(string $message, array $context = []): void
+    {
+        $this->log('📍 ' . $message, $context);
+    }
+
+    /** @param array<string, mixed> $context */
     private function log(string $message, array $context = []): void
     {
         if ($this->logger !== null) {

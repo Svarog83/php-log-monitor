@@ -1,0 +1,23 @@
+projects:
+  myapp:
+    directories:
+      - /var/log/myapp
+      - /opt/myapp/logs
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
+  
+  api:
+    directories:
+      - /var/log/api
+    log_pattern: "api-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
+  
+  # Project without position tracking (backward compatibility)
+  legacy:
+    directories:
+      - /var/log/legacy
+    log_pattern: "*.log" 

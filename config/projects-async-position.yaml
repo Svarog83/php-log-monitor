@@ -1,0 +1,24 @@
+projects:
+  # Using async file storage (recommended for production)
+  myapp-async:
+    directories:
+      - /var/log/myapp
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: "async-file"
+      path: "var/positions"
+  
+  # Using sync file storage (for compatibility)
+  myapp-sync:
+    directories:
+      - /var/log/myapp
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: "file"
+      path: "var/positions"
+  
+  # No position tracking (backward compatibility)
+  legacy:
+    directories:
+      - /var/log/legacy
+    log_pattern: "*.log" 

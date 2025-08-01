@@ -74,8 +74,6 @@ final class LogFileFinder implements LogFileRepository
                     } else {
                         $this->debugLogger->warning("Entry is not a file or stat failed: {$entry}");
                     }
-                } else {
-                    $this->debugLogger->notFound("Entry does not match pattern: {$entry}");
                 }
             }
         } catch (\Exception $e) {
