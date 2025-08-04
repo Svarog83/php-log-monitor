@@ -23,7 +23,7 @@ jobs:
       with:
         php-version: ${{ matrix.php-version }}
         extensions: pcntl
-        coverage: none
+        coverage: xdebug
         tools: composer:v2
     
     - name: Validate composer.json and composer.lock
