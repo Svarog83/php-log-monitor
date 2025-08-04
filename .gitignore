@@ -37,3 +37,5 @@ dist/
 coverage/
 .phpunit.result.cache
 /var/.phpunit.cache/test-results
+/ts/node_modules/
+/ts/dist/*
