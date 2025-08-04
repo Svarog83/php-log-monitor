@@ -6,13 +6,11 @@ namespace Tests;
 
 use App\Application\Configuration\EnvironmentConfiguration;
 use App\Application\Configuration\ProjectConfiguration;
-use App\Application\Monitoring\LogMonitor;
 use App\Domain\Model\PositionTracker;
 use App\Infrastructure\FileSystem\LogFileFinder;
 use App\Infrastructure\Logging\DebugLogger;
 use App\Infrastructure\Logging\LoggerFactory;
 use App\Infrastructure\Logging\MonologAdapter;
-use App\Infrastructure\Storage\FilePositionRepository;
 use App\Infrastructure\Storage\PositionStorageFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -64,10 +62,10 @@ class GracefulShutdownTest extends TestCase
 projects:
   test-project:
     name: test-project
-    monitored_directories:
+    directories:
       - {$this->testLogDir}
     log_pattern: "*.log"
-    position_tracking:
+    position_storage:
       enabled: true
       storage:
         type: file
@@ -93,7 +91,7 @@ YAML;
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
             // Create monitor
-            $monitor = new LogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
+            $monitor = new SynchronousLogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
 
             // Setup position tracking
             $positionConfig = $project->getPositionStorageConfig();
@@ -107,8 +105,12 @@ YAML;
             // Simulate some monitoring activity by adding content to log file
             file_put_contents($this->testLogFile, "New log entry 3\n", FILE_APPEND);
 
-            // Wait a bit for processing
-            sleep(2);
+            // Debug: Check file size
+            echo "DEBUG: Test log file size after append: " . filesize($this->testLogFile) . " bytes\n";
+            echo "DEBUG: Test log file path: " . $this->testLogFile . "\n";
+
+            // Run monitoring for 3 seconds
+            $monitor->runFor(3);
 
             // Verify position was saved during monitoring
             $this->assertTrue(
@@ -148,10 +150,10 @@ YAML;
 projects:
   test-project:
     name: test-project
-    monitored_directories:
+    directories:
       - {$this->testLogDir}
     log_pattern: "*.log"
-    position_tracking:
+    position_storage:
       enabled: true
       storage:
         type: file
@@ -175,7 +177,7 @@ YAML;
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
             // Create monitor
-            $monitor = new LogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
+            $monitor = new SynchronousLogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
 
             // Setup position tracking
             $positionConfig = $project->getPositionStorageConfig();
@@ -187,7 +189,7 @@ YAML;
             $monitor->start();
 
             // Wait a bit for initialization
-            sleep(1);
+            $monitor->runFor(1);
 
             // Test forceSavePosition
             $monitor->forceSavePosition();
@@ -219,10 +221,10 @@ YAML;
 projects:
   test-project:
     name: test-project
-    monitored_directories:
+    directories:
       - {$this->testLogDir}
     log_pattern: "*.log"
-    position_tracking:
+    position_storage:
       enabled: true
       storage:
         type: file
@@ -246,7 +248,7 @@ YAML;
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
             // Create monitor
-            $monitor = new LogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
+            $monitor = new SynchronousLogMonitor($project, $fileFinder, $monologAdapter, $debugLogger, 1.0);
 
             // Setup position tracking
             $positionConfig = $project->getPositionStorageConfig();
@@ -257,8 +259,11 @@ YAML;
             // Start monitor
             $monitor->start();
 
-            // Wait a bit for processing
-            sleep(2);
+            // Simulate some monitoring activity by adding content to log file
+            file_put_contents($this->testLogFile, "New log entry 4\n", FILE_APPEND);
+
+            // Run monitoring for 3 seconds
+            $monitor->runFor(3);
 
             // Verify position was saved during monitoring
             $this->assertTrue(

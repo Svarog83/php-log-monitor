@@ -35,4 +35,5 @@ dist/
 
 # Test coverage
 coverage/
-.phpunit.result.cache 
+.phpunit.result.cache
+/var/.phpunit.cache/test-results
