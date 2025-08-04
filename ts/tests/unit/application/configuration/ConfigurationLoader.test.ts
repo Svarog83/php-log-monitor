@@ -21,6 +21,45 @@ jest.mock('chokidar', () => ({
   }))
 }));
 
+// Mock js-yaml
+jest.mock('js-yaml', () => ({
+  load: jest.fn((yaml: string) => {
+    if (!yaml) return null;
+    
+    if (yaml.includes('projects:')) {
+      return {
+        projects: {
+          'test-project': {
+            directories: ['/var/log/test'],
+            log_pattern: '*.log',
+            position_storage: {
+              type: 'cached',
+              path: 'var/positions',
+              save_interval_seconds: 30
+            }
+          },
+          'project1': {
+            directories: ['/var/log/project1'],
+            log_pattern: '*.log',
+            position_storage: {
+              type: 'cached',
+              path: 'var/positions',
+              save_interval_seconds: 30
+            }
+          },
+          'project2': {
+            directories: ['/var/log/project2', '/var/log/project2/backup'],
+            log_pattern: 'logstash-*.json'
+          }
+        }
+      };
+    } else if (yaml.includes('invalid:')) {
+      return { invalid: { yaml: { structure: {} } } };
+    }
+    return null;
+  })
+}));
+
 // Mock the fs import
 const mockFs = {
   promises: {

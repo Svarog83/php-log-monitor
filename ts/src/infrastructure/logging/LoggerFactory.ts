@@ -70,6 +70,13 @@ export class LoggerFactory {
   }
 
   /**
+   * Create a default logger (same as createBasicLogger)
+   */
+  static createDefaultLogger(): WinstonLogger {
+    return this.createBasicLogger();
+  }
+
+  /**
    * Create a logger from environment variables
    */
   static createFromEnvironment(): WinstonLogger {
