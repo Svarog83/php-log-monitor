@@ -19,36 +19,42 @@
   - `LogFileRepository`, `PositionRepository`
 - Implemented value objects and utility types
 
-### 4. Unit Tests
-- Added unit tests for `Project` and `LogEntry` domain models
+### 4. Infrastructure Layer
+- Implemented file system repository using Chokidar (`ChokidarLogFileRepository`)
+- Implemented position storage repositories:
+  - `FilePositionRepository` - file-based storage
+  - `CachedPositionRepository` - in-memory caching wrapper
+  - `AsyncPositionRepository` - batched async saves
+- Implemented Winston logger (`WinstonLogger`) and custom Monolog socket transport (`MonologSocketTransport`) for Buggregator integration
+- Implemented `LoggerFactory` for creating loggers with different configurations
 
-### 5. Linting & Formatting
+### 5. Unit Tests
+- Added comprehensive unit tests for all infrastructure components
+- All tests passing (42 tests total)
+- Fixed Jest configuration for proper module resolution
+
+### 6. Linting & Formatting
 - ESLint and Prettier configs in place
 
 ---
 
 ## What Is Next
 
-### 1. Infrastructure Layer
-- Implement file system repository using Chokidar
-- Implement position storage repositories (file, cached, async)
-- Implement Winston logger and custom Monolog socket transport for Buggregator
-
-### 2. Application Layer
+### 1. Application Layer
 - Implement configuration loader and watcher (hot reload)
 - Implement monitoring/orchestration service
 
-### 3. Console Layer
+### 2. Console Layer
 - Implement CLI entrypoint (MonitorCommand)
 
-### 4. Testing
-- Add unit and integration tests for infrastructure and application layers
+### 3. Testing
+- Add integration tests for application layer
 - Add integration test for Monolog/Buggregator socket logging
 
-### 5. Documentation
+### 4. Documentation
 - Document architecture, config, usage, and Monolog/Buggregator integration
 
-### 6. Commit Workflow
+### 5. Commit Workflow
 - Run tests and lint before each commit
 - Commit after each major step
 

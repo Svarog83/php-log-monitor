@@ -45,6 +45,11 @@ export class LogEntryUtils {
     try {
       const parsed = JSON.parse(content);
       
+      // Only accept objects as valid log entries
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        return null;
+      }
+
       return {
         timestamp: parsed.timestamp || parsed.datetime || new Date().toISOString(),
         level: this.normalizeLevel(parsed.level || 'INFO'),

@@ -1,5 +1,5 @@
-import { Project } from '@/domain/models/Project.js';
-import { PositionStorageConfig } from '@/domain/models/PositionStorageConfig.js';
+import { Project } from '../../../../src/domain/models/Project.js';
+import { PositionStorageConfig } from '../../../../src/domain/models/PositionStorageConfig.js';
 
 describe('Project', () => {
   describe('constructor', () => {

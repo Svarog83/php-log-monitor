@@ -1,4 +1,4 @@
-import { LogEntryUtils, LogLevel } from '@/domain/models/LogEntry.js';
+import { LogEntryUtils, LogLevel } from '../../../../src/domain/models/LogEntry.js';
 
 describe('LogEntryUtils', () => {
   describe('parseJsonLog', () => {
