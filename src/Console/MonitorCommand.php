@@ -94,7 +94,6 @@ final class MonitorCommand extends Command
             $loggerFactory = new LoggerFactory($envConfig);
             $appLogger = $loggerFactory->createConsoleLogger();
             $debugLogger = new DebugLogger($isDebug, $loggerFactory->createDebugLogger());
-            $monologAdapter = new MonologAdapter($appLogger);
 
             // Setup file finder
             $fileFinder = new LogFileFinder(null, $debugLogger);
@@ -110,10 +109,12 @@ final class MonitorCommand extends Command
                     return Command::FAILURE;
                 }
 
+                $monologAdapter = new MonologAdapter($appLogger, $project);
                 $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
             } else {
                 // Monitor all projects
                 foreach ($config->getProjects() as $project) {
+                    $monologAdapter = new MonologAdapter($appLogger, $project);
                     $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
                 }
             }

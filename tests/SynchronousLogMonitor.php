@@ -256,7 +256,7 @@ final class SynchronousLogMonitor
             $newLines = $this->logFileRepository->readNewLines($this->currentLogFile, $this->lastPosition);
             
             foreach ($newLines as $line) {
-                $logEntry = LogEntry::fromJsonLine($line, $this->currentLogFile->filename);
+                $logEntry = LogEntry::fromJsonLine($line, $this->currentLogFile->path);
                 if ($logEntry !== null) {
                     $this->logger->logEntry($logEntry);
                 } else {

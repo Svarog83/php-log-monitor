@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Logging;
 
 use App\Domain\Model\LogEntry;
+use App\Domain\Model\Project;
 use Monolog\Level;
 use Monolog\Logger;
 
@@ -14,7 +15,8 @@ use Monolog\Logger;
 final class MonologAdapter
 {
     public function __construct(
-        private Logger $logger
+        private Logger $logger,
+        private Project $project
     ) {
     }
 
@@ -23,6 +25,7 @@ final class MonologAdapter
         $level = $this->mapLevel($entry->getLevel());
         $context = [
             'source_file' => $entry->sourceFile,
+            'project_name' => $this->project->name,
             'timestamp' => $entry->timestamp->format('Y-m-d H:i:s'),
         ];
 

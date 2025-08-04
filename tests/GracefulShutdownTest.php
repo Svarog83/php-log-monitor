@@ -86,7 +86,7 @@ YAML;
             $envConfig = new EnvironmentConfiguration('.env');
             $loggerFactory = new LoggerFactory($envConfig);
             $debugLogger = new DebugLogger(true, $loggerFactory->createDebugLogger());
-            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger());
+            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger(), $project);
             $fileFinder = new LogFileFinder(null, $debugLogger);
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
@@ -172,7 +172,7 @@ YAML;
             $envConfig = new EnvironmentConfiguration('.env');
             $loggerFactory = new LoggerFactory($envConfig);
             $debugLogger = new DebugLogger(true, $loggerFactory->createDebugLogger());
-            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger());
+            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger(), $project);
             $fileFinder = new LogFileFinder(null, $debugLogger);
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
@@ -243,7 +243,7 @@ YAML;
             $envConfig = new EnvironmentConfiguration('.env');
             $loggerFactory = new LoggerFactory($envConfig);
             $debugLogger = new DebugLogger(true, $loggerFactory->createDebugLogger());
-            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger());
+            $monologAdapter = new MonologAdapter($loggerFactory->createConsoleLogger(), $project);
             $fileFinder = new LogFileFinder(null, $debugLogger);
             $positionStorageFactory = new PositionStorageFactory($debugLogger);
 
