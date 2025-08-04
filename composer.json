@@ -1,4 +1,8 @@
 {
+    "name": "svarog83/php-log-monitor",
+    "description": "A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog.",
+    "type": "project",
+    "license": "MIT",
     "require": {
         "php": "^8.3",
         "danog/loop": "^1.1",
