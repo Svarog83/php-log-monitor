@@ -17,10 +17,30 @@ describe('MonitorCommand', () => {
     (process.exit as any) = mockProcessExit;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     console.log = originalConsoleLog;
     (process.exit as any) = originalProcessExit;
     jest.clearAllMocks();
+
+    // Clean up any services that might have been created
+    if (command && (command as any).serviceFactory) {
+      const currentService = (command as any).serviceFactory.getCurrentService();
+      if (currentService && typeof currentService.stop === 'function') {
+        try {
+          await currentService.stop();
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+
+    // Give async operations time to complete
+    await new Promise(resolve => setTimeout(resolve, 50));
+  });
+
+  afterAll(async () => {
+    // Final cleanup
+    await new Promise(resolve => setTimeout(resolve, 100));
   });
 
   describe('parseArguments', () => {

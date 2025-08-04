@@ -1,11 +1,13 @@
 import winston from 'winston';
 import path from 'path';
+import { MonologSocketTransport } from './MonologSocketTransport.js';
 
 /**
  * Winston-based logger implementation
  */
 export class WinstonLogger {
   private logger: winston.Logger;
+  private monologTransport: MonologSocketTransport | null = null;
 
   constructor(
     logLevel: string = 'info',
@@ -44,6 +46,23 @@ export class WinstonLogger {
         })
       ]
     });
+  }
+
+  /**
+   * Set Monolog transport for cleanup
+   */
+  setMonologTransport(transport: MonologSocketTransport): void {
+    this.monologTransport = transport;
+  }
+
+  /**
+   * Cleanup method for tests
+   */
+  async cleanup(): Promise<void> {
+    if (this.monologTransport) {
+      await this.monologTransport.cleanup();
+      this.monologTransport = null;
+    }
   }
 
   /**

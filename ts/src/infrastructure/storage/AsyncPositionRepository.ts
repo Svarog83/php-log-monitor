@@ -186,6 +186,13 @@ export class AsyncPositionRepository implements PositionRepository {
   }
 
   /**
+   * Cleanup method for tests - ensures all resources are released
+   */
+  async cleanup(): Promise<void> {
+    await this.stop();
+  }
+
+  /**
    * Get statistics about pending saves
    */
   getStats(): { pendingCount: number; isFlushing: boolean } {

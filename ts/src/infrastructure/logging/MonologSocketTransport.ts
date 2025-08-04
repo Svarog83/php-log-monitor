@@ -167,6 +167,16 @@ export class MonologSocketTransport {
   }
 
   /**
+   * Cleanup method for tests - ensures all resources are released
+   */
+  async cleanup(): Promise<void> {
+    this.close();
+    // Clear any pending messages
+    this.messageQueue = [];
+    this.reconnectAttempts = 0;
+  }
+
+  /**
    * Get connection status
    */
   getStatus(): { isConnected: boolean; queueSize: number; reconnectAttempts: number } {

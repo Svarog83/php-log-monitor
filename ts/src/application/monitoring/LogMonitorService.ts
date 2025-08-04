@@ -82,13 +82,26 @@ export class LogMonitorService {
       // Stop watching all directories
       await this.logFileRepository.stopWatching();
 
-      // Force save all positions
+      // Force save all positions and cleanup position repository
       await this.positionRepository.forceSave();
+
+      // Cleanup position repository if it has a cleanup method
+      if (this.positionRepository && typeof (this.positionRepository as any).cleanup === 'function') {
+        await (this.positionRepository as any).cleanup();
+      }
+
+      // Cleanup logger if it has a cleanup method
+      if (this.logger && typeof (this.logger as any).cleanup === 'function') {
+        await (this.logger as any).cleanup();
+      }
+
+      // Clear active projects
+      this.activeProjects.clear();
 
       this.logger.info('Log monitor service stopped successfully');
     } catch (error) {
       this.logger.error('Error stopping log monitor service:', error as Record<string, unknown>);
-      throw error;
+      // Don't re-throw to ensure cleanup continues
     }
   }
 

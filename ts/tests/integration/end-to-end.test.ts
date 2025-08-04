@@ -53,6 +53,38 @@ describe('End-to-End Integration', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(async () => {
+    // Clean up any services that might have been created
+    if (command && (command as any).serviceFactory) {
+      const currentService = (command as any).serviceFactory.getCurrentService();
+      if (currentService && typeof currentService.stop === 'function') {
+        try {
+          await currentService.stop();
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+
+    // Clear any remaining watchers
+    const chokidar = require('chokidar');
+    if (chokidar && chokidar.watch) {
+      const mockWatcher = chokidar.watch('', { persistent: false });
+      if (mockWatcher && typeof mockWatcher.close === 'function') {
+        try {
+          await mockWatcher.close();
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+  });
+
+  afterAll(async () => {
+    // Final cleanup
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+
   describe('MonitorCommand Integration', () => {
     it('should parse command line arguments correctly', () => {
       const args = ['--config', './test-config.yaml', '--env', 'development'];

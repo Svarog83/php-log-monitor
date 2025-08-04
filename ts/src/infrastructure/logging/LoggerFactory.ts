@@ -34,6 +34,9 @@ export class LoggerFactory {
     // Create Monolog transport for manual use
     const monologTransport = new MonologSocketTransport(monologConfig);
     
+    // Store the transport for cleanup
+    logger.setMonologTransport(monologTransport);
+
     // Override the log methods to also send to Monolog
     const originalInfo = logger.info.bind(logger);
     const originalWarn = logger.warn.bind(logger);

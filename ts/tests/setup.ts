@@ -12,4 +12,29 @@ global.console = {
 };
 
 // Set test timeout
-jest.setTimeout(10000); 
+jest.setTimeout(10000);
+
+// Global teardown to ensure all watchers are closed
+afterAll(async () => {
+  // Give any remaining async operations time to complete
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // Force close any remaining file watchers
+  const chokidar = require('chokidar');
+  if (chokidar && chokidar.watch) {
+    // This will close any remaining watchers
+    const mockWatcher = chokidar.watch('', { persistent: false });
+    if (mockWatcher && typeof mockWatcher.close === 'function') {
+      await mockWatcher.close();
+    }
+  }
+});
+
+// Ensure each test cleans up after itself
+afterEach(async () => {
+  // Clear any timers
+  jest.clearAllTimers();
+
+  // Give async operations time to complete
+  await new Promise(resolve => setTimeout(resolve, 50));
+}); 

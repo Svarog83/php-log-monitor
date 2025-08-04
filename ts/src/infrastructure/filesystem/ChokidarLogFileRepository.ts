@@ -139,9 +139,23 @@ export class ChokidarLogFileRepository implements LogFileRepository {
    * Stop watching all directories
    */
   async stopWatching(): Promise<void> {
+    const closePromises: Promise<void>[] = [];
+
     for (const [path, watcher] of this.watchers) {
-      await watcher.close();
+      try {
+        if (watcher && typeof watcher.close === 'function') {
+          closePromises.push(watcher.close());
+        }
+      } catch (error) {
+        console.error(`Error closing watcher for ${path}:`, error);
+      }
     }
+
+    // Wait for all watchers to close
+    if (closePromises.length > 0) {
+      await Promise.allSettled(closePromises);
+    }
+
     this.watchers.clear();
   }
 

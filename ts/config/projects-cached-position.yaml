@@ -1,0 +1,18 @@
+projects:
+  loopLog:
+    directories:
+      - /Users/checkito/workspace/it-training/loop/var/log
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: cached
+      path: var/positions
+      save_interval_seconds: 30
+  
+  checkout:
+    directories:
+      - /Users/checkito/workspace/checkout1/data/log
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: cached
+      path: var/positions
+      save_interval_seconds: 30 

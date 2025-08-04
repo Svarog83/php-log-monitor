@@ -60,17 +60,8 @@ jest.mock('js-yaml', () => ({
   })
 }));
 
-// Mock the fs import
-const mockFs = {
-  promises: {
-    readFile: jest.fn(),
-    mkdir: jest.fn(),
-    mkdtemp: jest.fn(),
-    rm: jest.fn()
-  }
-};
-
-jest.doMock('fs', () => mockFs);
+// Get the mocked fs module
+const mockFs = require('fs');
 
 describe('ConfigurationLoader', () => {
   let configLoader: ConfigurationLoader;
