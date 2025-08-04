@@ -10,6 +10,7 @@ This documentation serves as a memory bank for LLM interactions and project main
 - **[API Reference](./api-reference.md)** - Key classes and interfaces
 - **[Configuration](./configuration.md)** - Configuration format and options
 - **[Position Tracking](./position-tracking.md)** - Position tracking feature guide
+- **[Deployment](./deployment.md)** - Production deployment and operations guide
 
 ## Quick Start
 
@@ -17,6 +18,7 @@ This documentation serves as a memory bank for LLM interactions and project main
 2. Review [Architecture](./architecture.md) for system design
 3. Check [Implementation](./implementation.md) for technical details
 4. Use [Configuration](./configuration.md) for setup guidance
+5. Follow [Deployment](./deployment.md) for production deployment
 
 ## Project Overview
 
