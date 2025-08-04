@@ -44,11 +44,6 @@ final class LoggerFactory
     public function createConsoleLogger(): Logger
     {
         $logger = new Logger('console');
-        
-        // Console output with JSON formatter
-        $consoleHandler = new StreamHandler('php://stdout', Level::Info);
-        $consoleHandler->setFormatter(new JsonFormatter());
-        $logger->pushHandler($consoleHandler);
 
         // Buggregator handler
         $buggregatorHandler = new BuggregatorHandler(
