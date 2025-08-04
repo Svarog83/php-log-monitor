@@ -95,8 +95,6 @@ final class LogMonitor
 
     private function monitorCallback(PeriodicLoop $loop): bool
     {
-//        $this->debugLogger->cycle("Monitoring cycle started for project: {$this->project->name}");
-        
         try {
             // Only check for new files if we don't have a current file or if current file is no longer accessible
             if ($this->currentLogFile === null) {
@@ -105,8 +103,6 @@ final class LogMonitor
             }
             
             $this->monitorCurrentLogFile();
-            
-//            $this->debugLogger->success("Monitoring cycle completed for project: {$this->project->name}");
         } catch (\Exception $e) {
             $this->debugLogger->error("Error in monitoring cycle for project {$this->project->name}: " . $e->getMessage());
             
@@ -224,8 +220,6 @@ final class LogMonitor
         // Check if file size has changed (indicating new content)
         $currentSize = $this->logFileRepository->getFileSize($this->currentLogFile);
 
-//        $this->debugLogger->size("Current file size: {$currentSize} bytes");
-        
         if ($currentSize > $this->lastPosition) {
             $newContentSize = $currentSize - $this->lastPosition;
             

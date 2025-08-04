@@ -93,9 +93,20 @@ final class LogFileFinder implements LogFileRepository
         try {
             $file = $this->filesystem->openFile($logFile->path, 'r');
             $file->seek($lastPosition);
-            $content = $file->read();
+            
+            // Read all content from current position to end of file
+            $content = '';
+            while (!$file->eof()) {
+                $chunk = $file->read();
+                if ($chunk === null) {
+                    break;
+                }
+                $content .= $chunk;
+            }
+            
             $file->close();
-            if ($content === null) {
+            
+            if (empty($content)) {
                 $this->debugLogger->warning("No content read from file");
                 return [];
             }
