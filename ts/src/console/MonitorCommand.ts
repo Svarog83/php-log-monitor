@@ -108,6 +108,19 @@ export class MonitorCommand {
    * Create monitoring service based on options
    */
   private async createService(options: MonitorOptions): Promise<any> {
+    // If Monolog parameters are provided, use custom mode regardless of environment
+    if (options.monologHost && options.monologPort) {
+      return this.serviceFactory.createCustomService(
+        options.configPath,
+        {
+          logLevel: options.logLevel,
+          logDir: options.logDir,
+          monologHost: options.monologHost,
+          monologPort: options.monologPort
+        }
+      );
+    }
+
     switch (options.environment) {
       case 'development':
         return this.serviceFactory.createDevService(options.configPath);
