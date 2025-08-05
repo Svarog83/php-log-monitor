@@ -39,3 +39,4 @@ coverage/
 /var/.phpunit.cache/test-results
 /ts/node_modules/
 /ts/dist/*
+/ts/var/*
