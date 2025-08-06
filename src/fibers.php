@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @return Fiber<string, mixed, string, mixed>
+ */
 function asyncHttpGet(string $host, string $path = '/', int $port = 80): Fiber
 {
     return new Fiber(function () use ($host, $path, $port) {
@@ -80,7 +83,7 @@ while (!empty($fibers)) {
         }
     }
 
-    usleep(10000);
+    usleep(1000);
 }
 $end = microtime(true);
 echo sprintf("Total time: %.2f\n seconds", $end - $start);
