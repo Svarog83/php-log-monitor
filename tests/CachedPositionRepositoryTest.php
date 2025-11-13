@@ -56,12 +56,12 @@ class CachedPositionRepositoryTest extends TestCase
         $this->cachedRepository->savePosition($position);
 
         // Position should be in memory cache
-        $this->assertEquals(1, $this->cachedRepository->getCacheSize());
-        $this->assertEquals(1, $this->cachedRepository->getDirtyCount());
+        static::assertSame(1, $this->cachedRepository->getCacheSize());
+        static::assertSame(1, $this->cachedRepository->getDirtyCount());
 
         // Position should not be in file yet (unless interval has passed)
         $loadedPosition = $this->fileRepository->loadPosition('/test/file.log', 'test-project');
-        $this->assertNull($loadedPosition);
+        static::assertNull($loadedPosition);
     }
 
     public function testLoadPositionFromCache(): void
@@ -78,10 +78,10 @@ class CachedPositionRepositoryTest extends TestCase
         // Load from cache
         $loadedPosition = $this->cachedRepository->loadPosition('/test/file.log', 'test-project');
 
-        $this->assertNotNull($loadedPosition);
-        $this->assertEquals($position->filePath, $loadedPosition->filePath);
-        $this->assertEquals($position->position, $loadedPosition->position);
-        $this->assertEquals($position->projectName, $loadedPosition->projectName);
+        static::assertNotNull($loadedPosition);
+        static::assertSame($position->filePath, $loadedPosition->filePath);
+        static::assertSame($position->position, $loadedPosition->position);
+        static::assertSame($position->projectName, $loadedPosition->projectName);
     }
 
     public function testLoadPositionFromFile(): void
@@ -99,13 +99,13 @@ class CachedPositionRepositoryTest extends TestCase
         // Load from cached repository (should fall back to file)
         $loadedPosition = $this->cachedRepository->loadPosition('/test/file.log', 'test-project');
 
-        $this->assertNotNull($loadedPosition);
-        $this->assertEquals($position->filePath, $loadedPosition->filePath);
-        $this->assertEquals($position->position, $loadedPosition->position);
-        $this->assertEquals($position->projectName, $loadedPosition->projectName);
+        static::assertNotNull($loadedPosition);
+        static::assertSame($position->filePath, $loadedPosition->filePath);
+        static::assertSame($position->position, $loadedPosition->position);
+        static::assertSame($position->projectName, $loadedPosition->projectName);
 
         // Should now be cached
-        $this->assertEquals(1, $this->cachedRepository->getCacheSize());
+        static::assertSame(1, $this->cachedRepository->getCacheSize());
     }
 
     public function testForceSavePersistsToFile(): void
@@ -124,12 +124,12 @@ class CachedPositionRepositoryTest extends TestCase
 
         // Position should now be in file
         $loadedPosition = $this->fileRepository->loadPosition('/test/file.log', 'test-project');
-        $this->assertNotNull($loadedPosition);
-        $this->assertEquals($position->filePath, $loadedPosition->filePath);
-        $this->assertEquals($position->position, $loadedPosition->position);
+        static::assertNotNull($loadedPosition);
+        static::assertSame($position->filePath, $loadedPosition->filePath);
+        static::assertSame($position->position, $loadedPosition->position);
 
         // Should no longer be dirty
-        $this->assertEquals(0, $this->cachedRepository->getDirtyCount());
+        static::assertSame(0, $this->cachedRepository->getDirtyCount());
     }
 
     public function testSaveIntervalTriggersPersist(): void
@@ -160,8 +160,8 @@ class CachedPositionRepositoryTest extends TestCase
         $loadedPosition1 = $this->fileRepository->loadPosition('/test/file.log', 'test-project');
         $loadedPosition2 = $this->fileRepository->loadPosition('/test/file2.log', 'test-project');
 
-        $this->assertNotNull($loadedPosition1);
-        $this->assertNotNull($loadedPosition2);
+        static::assertNotNull($loadedPosition1);
+        static::assertNotNull($loadedPosition2);
     }
 
     public function testDeletePositionRemovesFromCache(): void
@@ -174,11 +174,11 @@ class CachedPositionRepositoryTest extends TestCase
         );
 
         $this->cachedRepository->savePosition($position);
-        $this->assertEquals(1, $this->cachedRepository->getCacheSize());
+        static::assertSame(1, $this->cachedRepository->getCacheSize());
 
         $this->cachedRepository->deletePosition('/test/file.log', 'test-project');
-        $this->assertEquals(0, $this->cachedRepository->getCacheSize());
-        $this->assertEquals(0, $this->cachedRepository->getDirtyCount());
+        static::assertSame(0, $this->cachedRepository->getCacheSize());
+        static::assertSame(0, $this->cachedRepository->getDirtyCount());
     }
 
     public function testLoadPositionsForProject(): void
@@ -201,15 +201,15 @@ class CachedPositionRepositoryTest extends TestCase
         $this->cachedRepository->savePosition($position2);
 
         $positions = $this->cachedRepository->loadPositionsForProject('test-project');
-        $this->assertCount(2, $positions);
+        static::assertCount(2, $positions);
     }
 
     public function testConfigurableSaveInterval(): void
     {
         $cachedRepo = new CachedPositionRepository($this->fileRepository, 30, $this->debugLogger);
-        $this->assertEquals(30, $cachedRepo->getSaveIntervalSeconds());
+        static::assertSame(30, $cachedRepo->getSaveIntervalSeconds());
 
         $cachedRepo->setSaveIntervalSeconds(60);
-        $this->assertEquals(60, $cachedRepo->getSaveIntervalSeconds());
+        static::assertSame(60, $cachedRepo->getSaveIntervalSeconds());
     }
 }

@@ -80,7 +80,7 @@ class GracefulShutdownTest extends TestCase
             $config = ProjectConfiguration::fromYamlFile($configPath);
             $project = $config->getProject('test-project');
 
-            $this->assertNotNull($project, 'Test project should be loaded');
+            static::assertNotNull($project, 'Test project should be loaded');
 
             // Setup components
             $envConfig = new EnvironmentConfiguration('.env');
@@ -113,7 +113,7 @@ class GracefulShutdownTest extends TestCase
             $monitor->runFor(3);
 
             // Verify position was saved during monitoring
-            $this->assertTrue(
+            static::assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
                 'Position should be saved during monitoring',
             );
@@ -122,15 +122,15 @@ class GracefulShutdownTest extends TestCase
             $monitor->stop();
 
             // Verify position is still saved after shutdown
-            $this->assertTrue(
+            static::assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
                 'Position should remain saved after graceful shutdown',
             );
 
             // Verify position data is correct
             $position = $positionRepository->loadPosition($this->testLogFile, 'test-project');
-            $this->assertNotNull($position, 'Position should be loadable after shutdown');
-            $this->assertGreaterThan(0, $position->position, 'Position should be greater than 0');
+            static::assertNotNull($position, 'Position should be loadable after shutdown');
+            static::assertGreaterThan(0, $position->position, 'Position should be greater than 0');
         } finally {
             // Cleanup
             if (file_exists($configPath)) {
@@ -194,7 +194,7 @@ class GracefulShutdownTest extends TestCase
             $monitor->forceSavePosition();
 
             // Verify position was saved
-            $this->assertTrue(
+            static::assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
                 'Position should be saved by forceSavePosition',
             );
@@ -264,14 +264,14 @@ class GracefulShutdownTest extends TestCase
             $monitor->runFor(3);
 
             // Verify position was saved during monitoring
-            $this->assertTrue(
+            static::assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
                 'Position should be saved during monitoring',
             );
 
             // Simulate abrupt stop (without calling stop())
             // The position should still be saved from the last monitoring cycle
-            $this->assertTrue(
+            static::assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
                 'Position should remain saved even after abrupt stop',
             );

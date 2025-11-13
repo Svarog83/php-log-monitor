@@ -51,7 +51,7 @@ class PositionTrackingTest extends TestCase
         // Load position
         $loadedPosition = $this->tracker->getPosition($filePath);
 
-        $this->assertEquals($position, $loadedPosition);
+        static::assertSame($position, $loadedPosition);
     }
 
     public function testLoadNonExistentPosition(): void
@@ -59,7 +59,7 @@ class PositionTrackingTest extends TestCase
         $filePath = '/var/log/nonexistent.log';
         $position = $this->tracker->getPosition($filePath);
 
-        $this->assertEquals(0, $position);
+        static::assertSame(0, $position);
     }
 
     public function testUpdatePosition(): void
@@ -77,7 +77,7 @@ class PositionTrackingTest extends TestCase
         // Load position
         $loadedPosition = $this->tracker->getPosition($filePath);
 
-        $this->assertEquals($newPosition, $loadedPosition);
+        static::assertSame($newPosition, $loadedPosition);
     }
 
     public function testLoadAllPositions(): void
@@ -92,11 +92,11 @@ class PositionTrackingTest extends TestCase
         // Load all positions
         $positions = $this->tracker->loadAllPositions();
 
-        $this->assertCount(2, $positions);
+        static::assertCount(2, $positions);
 
         $filePaths = array_map(static fn(FilePosition $p) => $p->filePath, $positions);
-        $this->assertContains($file1, $filePaths);
-        $this->assertContains($file2, $filePaths);
+        static::assertContains($file1, $filePaths);
+        static::assertContains($file2, $filePaths);
     }
 
     public function testDeletePosition(): void
@@ -108,14 +108,14 @@ class PositionTrackingTest extends TestCase
         $this->tracker->updatePosition($filePath, $position);
 
         // Verify position exists
-        $this->assertTrue($this->tracker->hasPosition($filePath));
+        static::assertTrue($this->tracker->hasPosition($filePath));
 
         // Delete position
         $this->tracker->deletePosition($filePath);
 
         // Verify position is deleted
-        $this->assertFalse($this->tracker->hasPosition($filePath));
-        $this->assertEquals(0, $this->tracker->getPosition($filePath));
+        static::assertFalse($this->tracker->hasPosition($filePath));
+        static::assertSame(0, $this->tracker->getPosition($filePath));
     }
 
     public function testFilePositionValueObject(): void
@@ -126,9 +126,9 @@ class PositionTrackingTest extends TestCase
 
         $filePosition = new FilePosition($filePath, $position, new \DateTimeImmutable(), $projectName);
 
-        $this->assertEquals($filePath, $filePosition->filePath);
-        $this->assertEquals($position, $filePosition->position);
-        $this->assertEquals($projectName, $filePosition->projectName);
+        static::assertSame($filePath, $filePosition->filePath);
+        static::assertSame($position, $filePosition->position);
+        static::assertSame($projectName, $filePosition->projectName);
     }
 
     public function testFilePositionValidation(): void

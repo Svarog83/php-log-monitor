@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @return Fiber<string, mixed, string, mixed>
  */

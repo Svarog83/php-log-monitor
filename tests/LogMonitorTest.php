@@ -16,9 +16,9 @@ class LogMonitorTest extends TestCase
             'test' => new Project('test', [__DIR__], 'test-*.log'),
         ]);
 
-        $this->assertTrue($config->hasProject('test'));
-        $this->assertInstanceOf(Project::class, $config->getProject('test'));
-        $this->assertEquals('test', $config->getProject('test')?->name);
+        static::assertTrue($config->hasProject('test'));
+        static::assertInstanceOf(Project::class, $config->getProject('test'));
+        static::assertSame('test', $config->getProject('test')?->name);
     }
 
     public function testProjectValidation(): void
