@@ -25,7 +25,7 @@ interface LogFileRepository
      *
      * @param array<LogFile> $logFiles
      */
-    public function getLatestLogFile(array $logFiles): ?LogFile;
+    public function getLatestLogFile(array $logFiles): null|LogFile;
 
     /**
      * Read new lines from a log file since the last position

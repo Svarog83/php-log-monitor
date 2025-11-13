@@ -13,6 +13,11 @@ A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. M
 - **Flexible Storage**: Support for different position storage backends (file, Redis, database)
 - **Monolog Integration**: Forwards log entries to Monolog with proper level mapping
 
+## Mago lint
+- **/usr/local/bin/mago lint** - to check for issues
+- **/usr/local/bin/mago analyze** - to find type errors
+- **/usr/local/bin/mago fmt --dry-run** - to see formatting suggestions
+
 ## Requirements
 
 - PHP 8.3+

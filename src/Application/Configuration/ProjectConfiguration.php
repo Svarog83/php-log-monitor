@@ -16,9 +16,8 @@ final class ProjectConfiguration
      * @param array<string, Project> $projects
      */
     public function __construct(
-        private array $projects = []
-    ) {
-    }
+        private array $projects = [],
+    ) {}
 
     /**
      * Load projects from YAML configuration file
@@ -31,45 +30,45 @@ final class ProjectConfiguration
 
         $config = Yaml::parseFile($configPath);
         if (!is_array($config)) {
-            throw new \InvalidArgumentException("Invalid configuration format");
+            throw new \InvalidArgumentException('Invalid configuration format');
         }
 
         $projects = [];
 
         $projectsConfig = $config['projects'] ?? [];
         if (!is_array($projectsConfig)) {
-            throw new \InvalidArgumentException("Invalid projects configuration");
+            throw new \InvalidArgumentException('Invalid projects configuration');
         }
 
         foreach ($projectsConfig as $projectName => $projectConfig) {
             if (!is_string($projectName)) {
-                throw new \InvalidArgumentException("Project name must be a string");
+                throw new \InvalidArgumentException('Project name must be a string');
             }
 
             if (!is_array($projectConfig)) {
-                throw new \InvalidArgumentException("Project configuration must be an array");
+                throw new \InvalidArgumentException('Project configuration must be an array');
             }
 
             $directories = $projectConfig['directories'] ?? [];
             if (!is_array($directories)) {
-                throw new \InvalidArgumentException("Directories must be an array");
+                throw new \InvalidArgumentException('Directories must be an array');
             }
 
             $logPattern = $projectConfig['log_pattern'] ?? 'logstash-*.json';
             if (!is_string($logPattern)) {
-                throw new \InvalidArgumentException("Log pattern must be a string");
+                throw new \InvalidArgumentException('Log pattern must be a string');
             }
 
             $positionStorage = $projectConfig['position_storage'] ?? [];
             if (!is_array($positionStorage)) {
-                throw new \InvalidArgumentException("Position storage configuration must be an array");
+                throw new \InvalidArgumentException('Position storage configuration must be an array');
             }
 
             $projects[$projectName] = new Project(
                 name: $projectName,
                 monitoredDirectories: $directories,
                 logPattern: $logPattern,
-                positionStorage: $positionStorage
+                positionStorage: $positionStorage,
             );
         }
 
@@ -84,7 +83,7 @@ final class ProjectConfiguration
         return $this->projects;
     }
 
-    public function getProject(string $name): ?Project
+    public function getProject(string $name): null|Project
     {
         return $this->projects[$name] ?? null;
     }
@@ -93,4 +92,4 @@ final class ProjectConfiguration
     {
         return isset($this->projects[$name]);
     }
-} 
+}

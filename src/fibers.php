@@ -7,7 +7,13 @@ function asyncHttpGet(string $host, string $path = '/', int $port = 80): Fiber
 {
     return new Fiber(function () use ($host, $path, $port) {
         $errno = $errstr = null;
-        $socket = stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT);
+        $socket = stream_socket_client(
+            "tcp://$host:$port",
+            $errno,
+            $errstr,
+            5,
+            STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT,
+        );
 
         if (!$socket) {
             throw new RuntimeException("Connection failed: $errstr ($errno)");
@@ -34,7 +40,8 @@ function asyncHttpGet(string $host, string $path = '/', int $port = 80): Fiber
             $w = $e = null;
             if (stream_select($r, $w, $e, 0, 50000)) {
                 $chunk = fread($socket, 4096);
-                if ($chunk === false) break;
+                if ($chunk === false)
+                    break;
                 $response .= $chunk;
             }
             Fiber::suspend();
@@ -87,4 +94,3 @@ while (!empty($fibers)) {
 }
 $end = microtime(true);
 echo sprintf("Total time: %.2f\n seconds", $end - $start);
-

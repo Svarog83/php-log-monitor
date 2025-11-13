@@ -59,18 +59,18 @@ class GracefulShutdownTest extends TestCase
     {
         // Create test configuration
         $configContent = <<<YAML
-projects:
-  test-project:
-    name: test-project
-    directories:
-      - {$this->testLogDir}
-    log_pattern: "*.log"
-    position_storage:
-      enabled: true
-      storage:
-        type: file
-        directory: {$this->testPositionsDir}
-YAML;
+        projects:
+          test-project:
+            name: test-project
+            directories:
+              - {$this->testLogDir}
+            log_pattern: "*.log"
+            position_storage:
+              enabled: true
+              storage:
+                type: file
+                directory: {$this->testPositionsDir}
+        YAML;
 
         $configPath = tempnam(sys_get_temp_dir(), 'test-config-') . '.yaml';
         file_put_contents($configPath, $configContent);
@@ -106,8 +106,8 @@ YAML;
             file_put_contents($this->testLogFile, "New log entry 3\n", FILE_APPEND);
 
             // Debug: Check file size
-            echo "DEBUG: Test log file size after append: " . filesize($this->testLogFile) . " bytes\n";
-            echo "DEBUG: Test log file path: " . $this->testLogFile . "\n";
+            echo 'DEBUG: Test log file size after append: ' . filesize($this->testLogFile) . " bytes\n";
+            echo 'DEBUG: Test log file path: ' . $this->testLogFile . "\n";
 
             // Run monitoring for 3 seconds
             $monitor->runFor(3);
@@ -115,7 +115,7 @@ YAML;
             // Verify position was saved during monitoring
             $this->assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
-                'Position should be saved during monitoring'
+                'Position should be saved during monitoring',
             );
 
             // Test graceful shutdown
@@ -124,14 +124,13 @@ YAML;
             // Verify position is still saved after shutdown
             $this->assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
-                'Position should remain saved after graceful shutdown'
+                'Position should remain saved after graceful shutdown',
             );
 
             // Verify position data is correct
             $position = $positionRepository->loadPosition($this->testLogFile, 'test-project');
             $this->assertNotNull($position, 'Position should be loadable after shutdown');
             $this->assertGreaterThan(0, $position->position, 'Position should be greater than 0');
-
         } finally {
             // Cleanup
             if (file_exists($configPath)) {
@@ -147,18 +146,18 @@ YAML;
     {
         // Create test configuration
         $configContent = <<<YAML
-projects:
-  test-project:
-    name: test-project
-    directories:
-      - {$this->testLogDir}
-    log_pattern: "*.log"
-    position_storage:
-      enabled: true
-      storage:
-        type: file
-        directory: {$this->testPositionsDir}
-YAML;
+        projects:
+          test-project:
+            name: test-project
+            directories:
+              - {$this->testLogDir}
+            log_pattern: "*.log"
+            position_storage:
+              enabled: true
+              storage:
+                type: file
+                directory: {$this->testPositionsDir}
+        YAML;
 
         $configPath = tempnam(sys_get_temp_dir(), 'test-config-') . '.yaml';
         file_put_contents($configPath, $configContent);
@@ -197,12 +196,11 @@ YAML;
             // Verify position was saved
             $this->assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
-                'Position should be saved by forceSavePosition'
+                'Position should be saved by forceSavePosition',
             );
 
             // Stop monitor
             $monitor->stop();
-
         } finally {
             // Cleanup
             if (file_exists($configPath)) {
@@ -218,18 +216,18 @@ YAML;
     {
         // Create test configuration
         $configContent = <<<YAML
-projects:
-  test-project:
-    name: test-project
-    directories:
-      - {$this->testLogDir}
-    log_pattern: "*.log"
-    position_storage:
-      enabled: true
-      storage:
-        type: file
-        directory: {$this->testPositionsDir}
-YAML;
+        projects:
+          test-project:
+            name: test-project
+            directories:
+              - {$this->testLogDir}
+            log_pattern: "*.log"
+            position_storage:
+              enabled: true
+              storage:
+                type: file
+                directory: {$this->testPositionsDir}
+        YAML;
 
         $configPath = tempnam(sys_get_temp_dir(), 'test-config-') . '.yaml';
         file_put_contents($configPath, $configContent);
@@ -268,16 +266,15 @@ YAML;
             // Verify position was saved during monitoring
             $this->assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
-                'Position should be saved during monitoring'
+                'Position should be saved during monitoring',
             );
 
             // Simulate abrupt stop (without calling stop())
             // The position should still be saved from the last monitoring cycle
             $this->assertTrue(
                 $positionRepository->hasPosition($this->testLogFile, 'test-project'),
-                'Position should remain saved even after abrupt stop'
+                'Position should remain saved even after abrupt stop',
             );
-
         } finally {
             // Cleanup
             if (file_exists($configPath)) {
@@ -307,4 +304,4 @@ YAML;
 
         rmdir($dir);
     }
-} 
+}

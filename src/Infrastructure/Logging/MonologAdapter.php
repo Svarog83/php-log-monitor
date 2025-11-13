@@ -16,9 +16,8 @@ final class MonologAdapter
 {
     public function __construct(
         private Logger $logger,
-        private Project $project
-    ) {
-    }
+        private Project $project,
+    ) {}
 
     public function logEntry(LogEntry $entry): void
     {
@@ -49,4 +48,4 @@ final class MonologAdapter
             default => Level::Info,
         };
     }
-} 
+}

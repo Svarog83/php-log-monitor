@@ -13,7 +13,7 @@ class LogMonitorTest extends TestCase
     public function testProjectConfigurationLoadsCorrectly(): void
     {
         $config = new ProjectConfiguration([
-            'test' => new Project('test', [__DIR__], 'test-*.log')
+            'test' => new Project('test', [__DIR__], 'test-*.log'),
         ]);
 
         $this->assertTrue($config->hasProject('test'));
@@ -32,4 +32,4 @@ class LogMonitorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         new Project('test', []);
     }
-} 
+}

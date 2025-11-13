@@ -17,7 +17,7 @@ final class EnvironmentConfiguration
     public function __construct(string $envPath = null)
     {
         $this->env = [];
-        
+
         if ($envPath !== null && file_exists($envPath)) {
             $dotenv = new Dotenv();
             $content = file_get_contents($envPath);
@@ -56,4 +56,4 @@ final class EnvironmentConfiguration
     {
         return sprintf('tcp://%s:%d', $this->getBuggregatorHost(), $this->getBuggregatorPort());
     }
-} 
+}

@@ -19,7 +19,7 @@ final readonly class Project
         public string $name,
         public array $monitoredDirectories,
         public string $logPattern = 'logstash-*.json',
-        public array $positionStorage = []
+        public array $positionStorage = [],
     ) {
         if (empty($this->name)) {
             throw new \InvalidArgumentException('Project name cannot be empty');
@@ -51,7 +51,7 @@ final readonly class Project
 
     /**
      * Get position storage configuration
-     * 
+     *
      * @return array<string, mixed>
      */
     public function getPositionStorageConfig(): array
@@ -66,4 +66,4 @@ final readonly class Project
     {
         return !empty($this->positionStorage);
     }
-} 
+}

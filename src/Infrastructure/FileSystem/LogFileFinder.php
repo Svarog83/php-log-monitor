@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\FileSystem;
 
+use Amp\File\Filesystem;
 use App\Domain\Model\LogFile;
 use App\Domain\Repository\LogFileRepository;
 use App\Infrastructure\Logging\DebugLogger;
-use Amp\File\Filesystem;
 use DateTimeImmutable;
 
 use function Amp\File\filesystem;
@@ -20,7 +20,7 @@ final class LogFileFinder implements LogFileRepository
     private Filesystem $filesystem;
     private DebugLogger $debugLogger;
 
-    public function __construct(?Filesystem $filesystem = null, ?DebugLogger $debugLogger = null)
+    public function __construct(null|Filesystem $filesystem = null, null|DebugLogger $debugLogger = null)
     {
         $this->filesystem = $filesystem ?? filesystem();
         $this->debugLogger = $debugLogger ?? new DebugLogger();
@@ -34,12 +34,12 @@ final class LogFileFinder implements LogFileRepository
 
         try {
             $entries = $this->filesystem->listFiles($directory);
-            
+
             foreach ($entries as $entry) {
                 if (preg_match($pattern, $entry)) {
                     $filePath = $directory . '/' . $entry;
                     $stat = $this->filesystem->getStatus($filePath);
-                    
+
                     if ($stat !== null && $this->filesystem->isFile($filePath)) {
                         $lastModified = DateTimeImmutable::createFromFormat('U', (string) $stat['mtime']);
                         if ($lastModified !== false) {
@@ -47,9 +47,9 @@ final class LogFileFinder implements LogFileRepository
                                 path: $filePath,
                                 filename: $entry,
                                 lastModified: $lastModified,
-                                size: $stat['size']
+                                size: $stat['size'],
                             );
-                            
+
                             $files[] = $logFile;
                         } else {
                             $this->debugLogger->warning("Failed to parse modification time for: {$entry}");
@@ -71,10 +71,10 @@ final class LogFileFinder implements LogFileRepository
     /**
      * @param array<LogFile> $logFiles
      */
-    public function getLatestLogFile(array $logFiles): ?LogFile
+    public function getLatestLogFile(array $logFiles): null|LogFile
     {
         if (empty($logFiles)) {
-            $this->debugLogger->warning("No log files provided");
+            $this->debugLogger->warning('No log files provided');
             return null;
         }
 
@@ -93,7 +93,7 @@ final class LogFileFinder implements LogFileRepository
         try {
             $file = $this->filesystem->openFile($logFile->path, 'r');
             $file->seek($lastPosition);
-            
+
             // Read all content from current position to end of file
             $content = '';
             while (!$file->eof()) {
@@ -103,11 +103,11 @@ final class LogFileFinder implements LogFileRepository
                 }
                 $content .= $chunk;
             }
-            
+
             $file->close();
-            
+
             if (empty($content)) {
-                $this->debugLogger->warning("No content read from file");
+                $this->debugLogger->warning('No content read from file');
                 return [];
             }
 
@@ -126,13 +126,13 @@ final class LogFileFinder implements LogFileRepository
             // Use native PHP filesize() to get real-time file size without caching issues
             clearstatcache(true, $logFile->path);
             $size = filesize($logFile->path);
-//            $this->debugLogger->warning('filesize = ' . $size);
-            
+            //            $this->debugLogger->warning('filesize = ' . $size);
+
             if ($size === false) {
                 $this->debugLogger->warning("Could not get file size for: {$logFile->filename}");
                 return 0;
             }
-            
+
             return $size;
         } catch (\Exception $e) {
             $this->debugLogger->error("Error getting file size for {$logFile->filename}: " . $e->getMessage());

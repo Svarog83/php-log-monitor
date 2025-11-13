@@ -42,8 +42,7 @@ final class MonitorCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->addArgument('config', InputArgument::REQUIRED, 'Path to configuration file')
+        $this->addArgument('config', InputArgument::REQUIRED, 'Path to configuration file')
             ->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'Specific project to monitor')
             ->addOption('interval', 'i', InputOption::VALUE_REQUIRED, 'Scan interval in seconds', '1.0')
             ->addOption('env-file', 'e', InputOption::VALUE_REQUIRED, 'Environment file path', '.env')
@@ -54,7 +53,7 @@ final class MonitorCommand extends Command
     {
         $this->output = $output;
         $isDebug = (bool) $input->getOption('debug');
-        
+
         $configPath = $input->getArgument('config');
         if (!is_string($configPath)) {
             $output->writeln('<error>Config path must be a string</error>');
@@ -110,12 +109,26 @@ final class MonitorCommand extends Command
                 }
 
                 $monologAdapter = new MonologAdapter($appLogger, $project);
-                $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
+                $this->monitors[] = $this->createMonitor(
+                    $project,
+                    $fileFinder,
+                    $monologAdapter,
+                    $interval,
+                    $debugLogger,
+                    $positionStorageFactory,
+                );
             } else {
                 // Monitor all projects
                 foreach ($config->getProjects() as $project) {
                     $monologAdapter = new MonologAdapter($appLogger, $project);
-                    $this->monitors[] = $this->createMonitor($project, $fileFinder, $monologAdapter, $interval, $debugLogger, $positionStorageFactory);
+                    $this->monitors[] = $this->createMonitor(
+                        $project,
+                        $fileFinder,
+                        $monologAdapter,
+                        $interval,
+                        $debugLogger,
+                        $positionStorageFactory,
+                    );
                 }
             }
 
@@ -144,7 +157,6 @@ final class MonitorCommand extends Command
 
             // Graceful shutdown
             $this->performGracefulShutdown();
-
         } catch (\Exception $e) {
             $output->writeln("<error>Error: {$e->getMessage()}</error>");
             return Command::FAILURE;
@@ -177,7 +189,9 @@ final class MonitorCommand extends Command
             // Enable signal handling
             pcntl_signal_dispatch();
         } else {
-            $this->output->writeln('<comment>Warning: pcntl extension not available. Signal handling disabled.</comment>');
+            $this->output->writeln(
+                '<comment>Warning: pcntl extension not available. Signal handling disabled.</comment>',
+            );
         }
     }
 
@@ -205,7 +219,7 @@ final class MonitorCommand extends Command
             try {
                 // Force save current position immediately
                 $monitor->forceSavePosition();
-                
+
                 // Stop the monitor
                 $monitor->stop();
             } catch (\Exception $e) {
@@ -222,10 +236,10 @@ final class MonitorCommand extends Command
         MonologAdapter $logger,
         float $interval,
         DebugLogger $debugLogger,
-        PositionStorageFactory $positionStorageFactory
+        PositionStorageFactory $positionStorageFactory,
     ): LogMonitor {
         $monitor = new LogMonitor($project, $fileFinder, $logger, $debugLogger, $interval);
-        
+
         // Setup position tracking if enabled for this project
         if ($project->isPositionTrackingEnabled()) {
             $positionConfig = $project->getPositionStorageConfig();
@@ -233,7 +247,7 @@ final class MonitorCommand extends Command
             $positionTracker = new PositionTracker($positionRepository, $project->name);
             $monitor->setPositionTracker($positionTracker);
         }
-        
+
         return $monitor;
     }
-} 
+}

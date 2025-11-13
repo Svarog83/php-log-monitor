@@ -18,11 +18,10 @@ final readonly class LogEntry
         public string $content,
         public string $sourceFile,
         public DateTimeImmutable $timestamp,
-        public ?array $metadata = null
-    ) {
-    }
+        public null|array $metadata = null,
+    ) {}
 
-    public static function fromJsonLine(string $line, string $sourceFile): ?self
+    public static function fromJsonLine(string $line, string $sourceFile): null|self
     {
         $data = json_decode($line, true);
         if (!is_array($data)) {
@@ -41,7 +40,7 @@ final readonly class LogEntry
             content: $line,
             sourceFile: $sourceFile,
             timestamp: $timestamp,
-            metadata: $data
+            metadata: $data,
         );
     }
 
@@ -64,4 +63,4 @@ final readonly class LogEntry
         $message = $this->metadata['message'] ?? null;
         return is_string($message) ? $message : $this->content;
     }
-} 
+}

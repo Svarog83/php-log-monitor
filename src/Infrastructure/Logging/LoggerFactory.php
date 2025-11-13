@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Logging;
 
 use App\Application\Configuration\EnvironmentConfiguration;
-use Monolog\Formatter\LineFormatter;
 use Monolog\Formatter\JsonFormatter;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -17,9 +17,8 @@ use Monolog\Logger;
 final class LoggerFactory
 {
     public function __construct(
-        private EnvironmentConfiguration $envConfig
-    ) {
-    }
+        private EnvironmentConfiguration $envConfig,
+    ) {}
 
     public function createLogger(string $name = 'log-monitor'): Logger
     {
@@ -32,10 +31,7 @@ final class LoggerFactory
         $logger->pushHandler($fileHandler);
 
         // Add Buggregator handler
-        $buggregatorHandler = new BuggregatorHandler(
-            $this->envConfig->getBuggregatorConnectionString(),
-            Level::Info
-        );
+        $buggregatorHandler = new BuggregatorHandler($this->envConfig->getBuggregatorConnectionString(), Level::Info);
         $logger->pushHandler($buggregatorHandler);
 
         return $logger;
@@ -46,10 +42,7 @@ final class LoggerFactory
         $logger = new Logger('console');
 
         // Buggregator handler
-        $buggregatorHandler = new BuggregatorHandler(
-            $this->envConfig->getBuggregatorConnectionString(),
-            Level::Info
-        );
+        $buggregatorHandler = new BuggregatorHandler($this->envConfig->getBuggregatorConnectionString(), Level::Info);
         $logger->pushHandler($buggregatorHandler);
 
         return $logger;
@@ -58,16 +51,16 @@ final class LoggerFactory
     public function createDebugLogger(): Logger
     {
         $logger = new Logger('debug');
-        
+
         // Console output with human-readable formatter for debug messages
         $consoleHandler = new StreamHandler('php://stdout', Level::Debug);
         $formatter = new LineFormatter(
             "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
-            'Y-m-d H:i:s'
+            'Y-m-d H:i:s',
         );
         $consoleHandler->setFormatter($formatter);
         $logger->pushHandler($consoleHandler);
 
         return $logger;
     }
-} 
+}

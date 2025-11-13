@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use Revolt\EventLoop;
+
 use function Amp\File\getSize;
 
 require 'vendor/autoload.php';
 
 $path = '/Users/checkito/workspace/it-training/loop/var/log/logstash-2025-06-04.json';
-$lastSize = getSize($path); ;
+$lastSize = getSize($path);
 echo 'last size: ' . $lastSize;
 EventLoop::repeat(1.0, function () use (&$lastSize, $path) {
     echo ' repeating';
@@ -22,7 +23,7 @@ EventLoop::repeat(1.0, function () use (&$lastSize, $path) {
 
         $lastSize = $size;
     } catch (\Throwable $e) {
-        echo "Error reading size: " . $e->getMessage() . "\n";
+        echo 'Error reading size: ' . $e->getMessage() . "\n";
     }
 });
 

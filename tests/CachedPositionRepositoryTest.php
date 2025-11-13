@@ -9,8 +9,8 @@ use App\Domain\Repository\PositionRepository;
 use App\Infrastructure\Logging\DebugLogger;
 use App\Infrastructure\Storage\CachedPositionRepository;
 use App\Infrastructure\Storage\FilePositionRepository;
-use PHPUnit\Framework\TestCase;
 use DateTimeImmutable;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Test for CachedPositionRepository
@@ -26,7 +26,7 @@ class CachedPositionRepositoryTest extends TestCase
     {
         $this->tempDir = sys_get_temp_dir() . '/cached-position-test-' . uniqid();
         mkdir($this->tempDir, 0755, true);
-        
+
         $this->debugLogger = new DebugLogger();
         $this->fileRepository = new FilePositionRepository($this->tempDir, $this->debugLogger);
         $this->cachedRepository = new CachedPositionRepository($this->fileRepository, 1, $this->debugLogger); // 1 second interval for testing
@@ -50,7 +50,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position);
@@ -70,14 +70,14 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position);
 
         // Load from cache
         $loadedPosition = $this->cachedRepository->loadPosition('/test/file.log', 'test-project');
-        
+
         $this->assertNotNull($loadedPosition);
         $this->assertEquals($position->filePath, $loadedPosition->filePath);
         $this->assertEquals($position->position, $loadedPosition->position);
@@ -90,7 +90,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         // Save directly to file repository
@@ -98,7 +98,7 @@ class CachedPositionRepositoryTest extends TestCase
 
         // Load from cached repository (should fall back to file)
         $loadedPosition = $this->cachedRepository->loadPosition('/test/file.log', 'test-project');
-        
+
         $this->assertNotNull($loadedPosition);
         $this->assertEquals($position->filePath, $loadedPosition->filePath);
         $this->assertEquals($position->position, $loadedPosition->position);
@@ -114,7 +114,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position);
@@ -138,7 +138,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position);
@@ -151,7 +151,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file2.log',
             position: 200,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position2);
@@ -159,7 +159,7 @@ class CachedPositionRepositoryTest extends TestCase
         // Both positions should now be in file
         $loadedPosition1 = $this->fileRepository->loadPosition('/test/file.log', 'test-project');
         $loadedPosition2 = $this->fileRepository->loadPosition('/test/file2.log', 'test-project');
-        
+
         $this->assertNotNull($loadedPosition1);
         $this->assertNotNull($loadedPosition2);
     }
@@ -170,7 +170,7 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position);
@@ -187,14 +187,14 @@ class CachedPositionRepositoryTest extends TestCase
             filePath: '/test/file1.log',
             position: 100,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $position2 = new FilePosition(
             filePath: '/test/file2.log',
             position: 200,
             lastUpdated: new DateTimeImmutable(),
-            projectName: 'test-project'
+            projectName: 'test-project',
         );
 
         $this->cachedRepository->savePosition($position1);
@@ -212,4 +212,4 @@ class CachedPositionRepositoryTest extends TestCase
         $cachedRepo->setSaveIntervalSeconds(60);
         $this->assertEquals(60, $cachedRepo->getSaveIntervalSeconds());
     }
-} 
+}

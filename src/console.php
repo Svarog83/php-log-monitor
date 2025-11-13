@@ -31,7 +31,6 @@ try {
     $application->setDefaultCommand('monitor', true);
 
     $application->run();
-}
-catch (\Throwable $e) {
+} catch (\Throwable $e) {
     dd($e->getMessage());
 }

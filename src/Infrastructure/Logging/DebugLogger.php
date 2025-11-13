@@ -11,9 +11,9 @@ use Monolog\Logger;
  */
 final class DebugLogger
 {
-    private ?Logger $logger = null;
+    private null|Logger $logger = null;
 
-    public function __construct(bool $enabled = false, ?Logger $logger = null)
+    public function __construct(bool $enabled = false, null|Logger $logger = null)
     {
         if ($enabled && $logger !== null) {
             $this->logger = $logger;
@@ -186,4 +186,4 @@ final class DebugLogger
     {
         $this->logger?->debug($message, $context);
     }
-} 
+}

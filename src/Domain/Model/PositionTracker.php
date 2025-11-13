@@ -14,9 +14,8 @@ final readonly class PositionTracker
 {
     public function __construct(
         private PositionRepository $positionRepository,
-        private string $projectName
-    ) {
-    }
+        private string $projectName,
+    ) {}
 
     /**
      * Get the current position for a file, or 0 if not found
@@ -36,7 +35,7 @@ final readonly class PositionTracker
             filePath: $filePath,
             position: $newPosition,
             lastUpdated: new DateTimeImmutable(),
-            projectName: $this->projectName
+            projectName: $this->projectName,
         );
 
         $this->positionRepository->savePosition($position);
@@ -44,7 +43,7 @@ final readonly class PositionTracker
 
     /**
      * Load all positions for the current project
-     * 
+     *
      * @return array<FilePosition>
      */
     public function loadAllPositions(): array
@@ -86,4 +85,4 @@ final readonly class PositionTracker
             $this->positionRepository->forceSave();
         }
     }
-} 
+}

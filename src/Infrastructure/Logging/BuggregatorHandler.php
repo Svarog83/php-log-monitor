@@ -28,7 +28,7 @@ final class BuggregatorHandler extends SocketHandler
         } catch (\Exception $e) {
             // Suppress connection errors as requested
             // Log to error log if needed
-            error_log("Buggregator connection error: " . $e->getMessage());
+            error_log('Buggregator connection error: ' . $e->getMessage());
         }
     }
-} 
+}

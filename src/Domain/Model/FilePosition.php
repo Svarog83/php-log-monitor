@@ -15,7 +15,7 @@ final readonly class FilePosition
         public string $filePath,
         public int $position,
         public DateTimeImmutable $lastUpdated,
-        public string $projectName
+        public string $projectName,
     ) {
         if (empty($this->filePath)) {
             throw new \InvalidArgumentException('File path cannot be empty');
@@ -36,7 +36,7 @@ final readonly class FilePosition
             filePath: $this->filePath,
             position: $newPosition,
             lastUpdated: new DateTimeImmutable(),
-            projectName: $this->projectName
+            projectName: $this->projectName,
         );
     }
 
@@ -59,7 +59,7 @@ final readonly class FilePosition
             'file_path' => $this->filePath,
             'position' => $this->position,
             'last_updated' => $this->lastUpdated->format('Y-m-d H:i:s'),
-            'project_name' => $this->projectName
+            'project_name' => $this->projectName,
         ];
     }
 
@@ -71,29 +71,29 @@ final readonly class FilePosition
         if (!isset($data['file_path']) || !is_string($data['file_path'])) {
             throw new \InvalidArgumentException('file_path must be a string');
         }
-        
+
         if (!isset($data['position']) || !is_int($data['position'])) {
             throw new \InvalidArgumentException('position must be an integer');
         }
-        
+
         if (!isset($data['last_updated']) || !is_string($data['last_updated'])) {
             throw new \InvalidArgumentException('last_updated must be a string');
         }
-        
+
         if (!isset($data['project_name']) || !is_string($data['project_name'])) {
             throw new \InvalidArgumentException('project_name must be a string');
         }
-        
+
         $lastUpdated = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['last_updated']);
         if ($lastUpdated === false) {
             throw new \InvalidArgumentException('Invalid date format for last_updated');
         }
-        
+
         return new self(
             filePath: $data['file_path'],
             position: $data['position'],
             lastUpdated: $lastUpdated,
-            projectName: $data['project_name']
+            projectName: $data['project_name'],
         );
     }
-} 
+}

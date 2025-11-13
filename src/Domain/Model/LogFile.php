@@ -15,16 +15,15 @@ final readonly class LogFile
         public string $path,
         public string $filename,
         public DateTimeImmutable $lastModified,
-        public int $size
-    ) {
-    }
+        public int $size,
+    ) {}
 
     public function isNewerThan(LogFile $other): bool
     {
         return $this->lastModified > $other->lastModified;
     }
 
-    public function getDateFromFilename(): ?DateTimeImmutable
+    public function getDateFromFilename(): null|DateTimeImmutable
     {
         // Extract date from filename like "logstash-2025-07-24.json"
         if (preg_match('/logstash-(\d{4}-\d{2}-\d{2})\.json$/', $this->filename, $matches)) {
@@ -39,4 +38,4 @@ final readonly class LogFile
     {
         return $this->path === $other->path;
     }
-} 
+}

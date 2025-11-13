@@ -6,8 +6,8 @@ namespace Tests;
 
 use App\Domain\Model\FilePosition;
 use App\Domain\Model\PositionTracker;
-use App\Infrastructure\Storage\FilePositionRepository;
 use App\Infrastructure\Logging\DebugLogger;
+use App\Infrastructure\Storage\FilePositionRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -148,4 +148,4 @@ class PositionTrackingTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         new FilePosition('/var/log/test.log', 0, new \DateTimeImmutable(), '');
     }
-} 
+}
