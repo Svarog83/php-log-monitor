@@ -23,7 +23,7 @@ final readonly class PositionTracker
     public function getPosition(string $filePath): int
     {
         $position = $this->positionRepository->loadPosition($filePath, $this->projectName);
-        return $position?->position ?? 0;
+        return $position->position ?? 0;
     }
 
     /**

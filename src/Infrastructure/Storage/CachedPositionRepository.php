@@ -78,9 +78,11 @@ final class CachedPositionRepository implements PositionRepository
         // First, try to get from cache
         $cachedPositions = [];
         foreach ($this->positionCache as $position) {
-            if ($position->isForProject($projectName)) {
-                $cachedPositions[] = $position;
+            if (!$position->isForProject($projectName)) {
+                continue;
             }
+
+            $cachedPositions[] = $position;
         }
 
         if (!empty($cachedPositions)) {
@@ -120,9 +122,11 @@ final class CachedPositionRepository implements PositionRepository
         // Remove from cache
         $keysToRemove = [];
         foreach ($this->positionCache as $cacheKey => $position) {
-            if ($position->isForProject($projectName)) {
-                $keysToRemove[] = $cacheKey;
+            if (!$position->isForProject($projectName)) {
+                continue;
             }
+
+            $keysToRemove[] = $cacheKey;
         }
 
         foreach ($keysToRemove as $cacheKey) {

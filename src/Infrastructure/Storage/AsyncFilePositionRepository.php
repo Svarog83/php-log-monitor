@@ -111,7 +111,10 @@ final class AsyncFilePositionRepository implements PositionRepository
             $projectPattern = str_replace('*', '.*', $projectPattern);
             $projectPattern = '/^' . $projectPattern . '$/';
 
-            $matchingFiles = array_filter($files, fn(string $file): bool => (bool) preg_match($projectPattern, $file));
+            $matchingFiles = array_filter(
+                $files,
+                static fn(string $file): bool => (bool) preg_match($projectPattern, $file),
+            );
 
             $this->debugLogger->stats('Found ' . count($matchingFiles) . ' position files for project');
 
@@ -181,7 +184,10 @@ final class AsyncFilePositionRepository implements PositionRepository
             $projectPattern = str_replace('*', '.*', $projectPattern);
             $projectPattern = '/^' . $projectPattern . '$/';
 
-            $matchingFiles = array_filter($files, fn(string $file): bool => (bool) preg_match($projectPattern, $file));
+            $matchingFiles = array_filter(
+                $files,
+                static fn(string $file): bool => (bool) preg_match($projectPattern, $file),
+            );
 
             $deletedCount = 0;
             foreach ($matchingFiles as $file) {

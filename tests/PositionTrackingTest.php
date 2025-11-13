@@ -94,7 +94,7 @@ class PositionTrackingTest extends TestCase
 
         $this->assertCount(2, $positions);
 
-        $filePaths = array_map(fn(FilePosition $p) => $p->filePath, $positions);
+        $filePaths = array_map(static fn(FilePosition $p) => $p->filePath, $positions);
         $this->assertContains($file1, $filePaths);
         $this->assertContains($file2, $filePaths);
     }

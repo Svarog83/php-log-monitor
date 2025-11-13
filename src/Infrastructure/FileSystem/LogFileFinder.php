@@ -36,27 +36,29 @@ final class LogFileFinder implements LogFileRepository
             $entries = $this->filesystem->listFiles($directory);
 
             foreach ($entries as $entry) {
-                if (preg_match($pattern, $entry)) {
-                    $filePath = $directory . '/' . $entry;
-                    $stat = $this->filesystem->getStatus($filePath);
+                if (!preg_match($pattern, $entry)) {
+                    continue;
+                }
 
-                    if ($stat !== null && $this->filesystem->isFile($filePath)) {
-                        $lastModified = DateTimeImmutable::createFromFormat('U', (string) $stat['mtime']);
-                        if ($lastModified !== false) {
-                            $logFile = new LogFile(
-                                path: $filePath,
-                                filename: $entry,
-                                lastModified: $lastModified,
-                                size: $stat['size'],
-                            );
+                $filePath = $directory . '/' . $entry;
+                $stat = $this->filesystem->getStatus($filePath);
 
-                            $files[] = $logFile;
-                        } else {
-                            $this->debugLogger->warning("Failed to parse modification time for: {$entry}");
-                        }
+                if ($stat !== null && $this->filesystem->isFile($filePath)) {
+                    $lastModified = DateTimeImmutable::createFromFormat('U', (string) $stat['mtime']);
+                    if ($lastModified !== false) {
+                        $logFile = new LogFile(
+                            path: $filePath,
+                            filename: $entry,
+                            lastModified: $lastModified,
+                            size: $stat['size'],
+                        );
+
+                        $files[] = $logFile;
                     } else {
-                        $this->debugLogger->warning("Entry is not a file or stat failed: {$entry}");
+                        $this->debugLogger->warning("Failed to parse modification time for: {$entry}");
                     }
+                } else {
+                    $this->debugLogger->warning("Entry is not a file or stat failed: {$entry}");
                 }
             }
         } catch (\Exception $e) {
@@ -80,9 +82,11 @@ final class LogFileFinder implements LogFileRepository
 
         $latest = $logFiles[0];
         foreach ($logFiles as $logFile) {
-            if ($logFile->isNewerThan($latest)) {
-                $latest = $logFile;
+            if (!$logFile->isNewerThan($latest)) {
+                continue;
             }
+
+            $latest = $logFile;
         }
 
         return $latest;
@@ -113,7 +117,7 @@ final class LogFileFinder implements LogFileRepository
 
             $lines = explode("\n", $content);
 
-            return array_filter($lines, fn(string $line) => !empty(trim($line)));
+            return array_filter($lines, static fn(string $line) => !empty(trim($line)));
         } catch (\Exception $e) {
             $this->debugLogger->error("Error reading file {$logFile->filename}: " . $e->getMessage());
             return [];

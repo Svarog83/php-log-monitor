@@ -30,9 +30,11 @@ final readonly class Project
         }
 
         foreach ($this->monitoredDirectories as $directory) {
-            if (!is_dir($directory)) {
-                throw new \InvalidArgumentException("Directory does not exist: {$directory}");
+            if (is_dir($directory)) {
+                continue;
             }
+
+            throw new \InvalidArgumentException("Directory does not exist: {$directory}");
         }
     }
 
