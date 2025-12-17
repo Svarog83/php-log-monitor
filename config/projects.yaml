@@ -16,3 +16,12 @@ projects:
       type: cached
       path: var/positions
       save_interval_seconds: 30
+
+  lc:
+    directories:
+      - /Users/checkito/workspace/internet-web1/backend/calculation/var/log
+    log_pattern: "logstash-*.json"
+    position_storage:
+      type: cached
+      path: var/positions
+      save_interval_seconds: 30
