@@ -8,6 +8,11 @@ TAILSCALE_EXIT_NODE="${TAILSCALE_EXIT_NODE:-}"
 TAILSCALE_HOSTNAME="${TAILSCALE_HOSTNAME:-tailscale-vpn}"
 TAILSCALE_INTERFACE="tailscale0"
 
+# Graceful shutdown state
+SHUTDOWN_REQUESTED=0
+TAILSCALED_PID=""
+MONITOR_PID=""
+
 # Logging function
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" >&2
@@ -165,11 +170,140 @@ activate_kill_switch() {
     iptables -L OUTPUT -n -v | head -10 || true
 }
 
+# Check if Transmission is still running by checking if port 9091 is listening
+# Since Transmission uses network_mode: "service:vpn", it shares this container's network namespace
+is_transmission_running() {
+    # Try multiple methods to check if port 9091 is listening
+    # Method 1: Use ss (socket statistics) - modern and fast
+    if command -v ss >/dev/null 2>&1 && ss -ln | grep -q ":9091 "; then
+        return 0  # Port is listening, Transmission is running
+    fi
+    
+    # Method 2: Use netstat (fallback)
+    if command -v netstat >/dev/null 2>&1 && netstat -ln 2>/dev/null | grep -q ":9091 "; then
+        return 0  # Port is listening, Transmission is running
+    fi
+    
+    # Method 3: Try to connect with netcat (most reliable, already installed)
+    if nc -z localhost 9091 2>/dev/null; then
+        return 0  # Port is listening, Transmission is running
+    fi
+    
+    # Port is not listening, Transmission has shut down
+    return 1
+}
+
+# Wait for Transmission to shut down gracefully
+# Since Transmission uses network_mode: "service:vpn", Docker will stop it first.
+# We check if port 9091 is still listening and exit early when Transmission shuts down.
+wait_for_transmission_shutdown() {
+    local max_wait=${1:-10}  # Maximum wait time (matches Transmission stop_grace_period)
+    local check_interval=1   # Check every second
+    local elapsed=0
+    
+    log "Waiting for Transmission to shut down gracefully (max ${max_wait}s)..."
+    log "  (Checking if Transmission port 9091 is still listening)"
+    
+    # Poll port 9091 until it's no longer listening or max wait time is reached
+    while [ $elapsed -lt $max_wait ]; do
+        if ! is_transmission_running; then
+            log "✓ Transmission has shut down (port 9091 no longer listening) after ${elapsed}s"
+            return 0
+        fi
+        
+        # Log progress every 5 seconds
+        if [ $((elapsed % 5)) -eq 0 ] && [ $elapsed -gt 0 ]; then
+            log "  Still waiting... Transmission port 9091 is still listening (${elapsed}/${max_wait}s)"
+        fi
+        
+        sleep $check_interval
+        elapsed=$((elapsed + check_interval))
+    done
+    
+    # Final check
+    if ! is_transmission_running; then
+        log "✓ Transmission has shut down (port 9091 no longer listening) after ${elapsed}s"
+        return 0
+    else
+        log "WARNING: Transmission port 9091 still listening after ${max_wait}s, proceeding anyway"
+        return 1
+    fi
+}
+
+# Graceful shutdown function
+graceful_shutdown() {
+    if [ $SHUTDOWN_REQUESTED -eq 1 ]; then
+        return 0  # Already shutting down
+    fi
+    
+    SHUTDOWN_REQUESTED=1
+    log "=== Graceful shutdown initiated ==="
+    
+    # Step 1: Wait for Transmission to shut down first
+    log "Step 1: Waiting for Transmission to shut down gracefully..."
+    wait_for_transmission_shutdown 10
+    
+    # Step 2: Stop health monitoring
+    if [ -n "$MONITOR_PID" ] && kill -0 "$MONITOR_PID" 2>/dev/null; then
+        log "Step 2: Stopping health monitoring..."
+        kill "$MONITOR_PID" 2>/dev/null || true
+        wait "$MONITOR_PID" 2>/dev/null || true
+    fi
+    
+    # Step 3: Disconnect from Tailscale network (must be done while daemon is running)
+    log "Step 3: Disconnecting from Tailscale network..."
+    tailscale down 2>/dev/null || true
+    
+    # Step 4: Shut down Tailscale daemon gracefully
+    if [ -n "$TAILSCALED_PID" ] && kill -0 "$TAILSCALED_PID" 2>/dev/null; then
+        log "Step 4: Shutting down Tailscale daemon gracefully..."
+        # Send SIGTERM to tailscaled for graceful shutdown
+        kill -TERM "$TAILSCALED_PID" 2>/dev/null || true
+        
+        # Wait up to 10 seconds for tailscaled to shut down
+        local wait_count=0
+        while [ $wait_count -lt 10 ]; do
+            if ! kill -0 "$TAILSCALED_PID" 2>/dev/null; then
+                log "✓ Tailscale daemon shut down gracefully"
+                break
+            fi
+            sleep 1
+            wait_count=$((wait_count + 1))
+        done
+        
+        # If still running, force kill
+        if kill -0 "$TAILSCALED_PID" 2>/dev/null; then
+            log "WARNING: Tailscale daemon did not shut down gracefully, forcing termination"
+            kill -KILL "$TAILSCALED_PID" 2>/dev/null || true
+        fi
+    fi
+    
+    # Step 5: Clean up iptables rules (restore default policy)
+    log "Step 5: Cleaning up iptables rules..."
+    iptables -P OUTPUT ACCEPT 2>/dev/null || true
+    iptables -F OUTPUT 2>/dev/null || true
+    
+    log "=== Graceful shutdown completed ==="
+    exit 0
+}
+
+# Signal handler setup
+setup_signal_handlers() {
+    trap 'log "Received SIGTERM, initiating graceful shutdown..."; graceful_shutdown' SIGTERM
+    trap 'log "Received SIGINT, initiating graceful shutdown..."; graceful_shutdown' SIGINT
+    log "Signal handlers installed for graceful shutdown"
+}
+
 # Monitor health in background
 monitor_health() {
     log "Starting health monitoring loop..."
-    while true; do
+    while [ $SHUTDOWN_REQUESTED -eq 0 ]; do
         sleep 30
+        
+        # Break if shutdown requested
+        if [ $SHUTDOWN_REQUESTED -eq 1 ]; then
+            break
+        fi
         
         # Check if interface exists and is up
         if ! ip link show "$TAILSCALE_INTERFACE" >/dev/null 2>&1; then
@@ -201,10 +335,14 @@ monitor_health() {
             log "WARNING: Exit node $TAILSCALE_EXIT_NODE is not reachable"
         fi
     done
+    log "Health monitoring stopped"
 }
 
 # Main startup sequence
 main() {
+    # Setup signal handlers for graceful shutdown
+    setup_signal_handlers
+    
     log "Starting Tailscale VPN service with kill switch..."
     
     # Validate required environment variables
@@ -303,8 +441,21 @@ main() {
     monitor_health &
     MONITOR_PID=$!
     
-    # Wait for tailscaled process
-    wait $TAILSCALED_PID
+    # Wait for tailscaled process (or until shutdown requested)
+    while [ $SHUTDOWN_REQUESTED -eq 0 ]; do
+        if ! kill -0 "$TAILSCALED_PID" 2>/dev/null; then
+            log "Tailscale daemon exited"
+            break
+        fi
+        sleep 1
+    done
+    
+    # If shutdown was requested, graceful_shutdown was already called
+    # Otherwise, tailscaled exited unexpectedly
+    if [ $SHUTDOWN_REQUESTED -eq 0 ]; then
+        log "Tailscale daemon exited unexpectedly, cleaning up..."
+        graceful_shutdown
+    fi
 }
 
 # Run main function
