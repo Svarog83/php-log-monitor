@@ -1,0 +1,8 @@
+# Environment files
+.env
+
+# Volume data (created by Docker Compose)
+tailscale-state/
+transmission-data/
+transmission-config/
+
