@@ -123,9 +123,60 @@ test_control_plane() {
     fi
 }
 
+# Configure Docker network routing exceptions
+# Tailscale's exit node routes ALL traffic through tailscale0 including Docker network traffic.
+# This breaks container port forwarding because responses go through tailscale0 instead of eth0.
+# We need to add policy routing rules to keep Docker network traffic on eth0.
+configure_docker_network_routing() {
+    log "Configuring Docker network routing exceptions..."
+    
+    # Detect Docker network interface and subnet
+    local docker_interface="eth0"
+    local docker_subnet=""
+    
+    # Get the subnet from eth0 interface (POSIX-compatible, no grep -P)
+    docker_subnet=$(ip -4 addr show "$docker_interface" 2>/dev/null | awk '/inet / {print $2}' | head -1)
+    if [ -z "$docker_subnet" ]; then
+        log "WARNING: Could not detect Docker network subnet, skipping routing exception"
+        return 0
+    fi
+    
+    # Convert to network address (e.g., 192.168.97.2/24 -> 192.168.97.0/24)
+    local network_cidr
+    network_cidr=$(echo "$docker_subnet" | sed 's|\.[0-9]*/|.0/|')
+    
+    log "Detected Docker network: $network_cidr on $docker_interface"
+    
+    # Add policy routing rule with priority before Tailscale's table 52 lookup (priority 5270)
+    # Priority 5200 ensures Docker network traffic uses the main routing table (eth0)
+    if ! ip rule show | grep -q "to $network_cidr lookup main"; then
+        ip rule add to "$network_cidr" lookup main priority 5200
+        log "Added routing rule: to $network_cidr lookup main (priority 5200)"
+    else
+        log "Routing rule for $network_cidr already exists"
+    fi
+    
+    # Verify the routing is correct
+    local gateway_ip
+    gateway_ip=$(ip route show default | awk '/via/ {print $3}' | head -1)
+    if [ -n "$gateway_ip" ]; then
+        local route_dev
+        route_dev=$(ip route get "$gateway_ip" 2>/dev/null | awk '/dev/ {for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1)
+        if [ "$route_dev" = "$docker_interface" ]; then
+            log "✓ Docker gateway ($gateway_ip) correctly routes through $docker_interface"
+        else
+            log "WARNING: Docker gateway routes through $route_dev instead of $docker_interface"
+        fi
+    fi
+}
+
 # Activate kill switch (Phase 2: Selective kill switch that allows Tailscale traffic)
 activate_kill_switch() {
     log "Activating kill switch (iptables rules)..."
+    
+    # First, configure Docker network routing exceptions
+    # This must be done BEFORE iptables rules to ensure correct routing
+    configure_docker_network_routing
     
     # Flush existing OUTPUT chain rules (if any)
     iptables -F OUTPUT 2>/dev/null || true
@@ -135,6 +186,15 @@ activate_kill_switch() {
     
     # Allow loopback traffic
     iptables -A OUTPUT -o lo -j ACCEPT
+    
+    # Allow Docker network traffic (for container port forwarding)
+    # This must come early to allow SYN-ACK packets back to Docker gateway
+    local docker_subnet
+    docker_subnet=$(ip -4 addr show eth0 2>/dev/null | awk '/inet / {print $2}' | head -1 | sed 's|\.[0-9]*/|.0/|')
+    if [ -n "$docker_subnet" ]; then
+        iptables -A OUTPUT -o eth0 -d "$docker_subnet" -j ACCEPT
+        log "  - Docker network ($docker_subnet on eth0)"
+    fi
     
     # Allow established and related connections (critical for maintaining existing connections)
     iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
