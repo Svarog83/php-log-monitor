@@ -28,6 +28,7 @@ function onOpen() {
     .addItem('Refresh All', 'refreshAll')
     .addSeparator()
     .addItem('Refresh Portfolio Only', 'refreshPortfolio')
+    .addItem('Refresh Chain Balances Only', 'refreshChainBalances')
     .addItem('Sync FIFO Lots Only', 'syncFIFOLots')
     .addToUi();
 }
@@ -40,12 +41,14 @@ function refreshAll() {
   const t0 = new Date();
   const lotsCreated = syncFIFOLots();
   const stats = refreshPortfolio();
+  const chainStats = refreshChainBalances();
   const elapsed = ((new Date() - t0) / 1000).toFixed(1);
 
   SpreadsheetApp.getUi().alert(
     'Refresh complete (' + elapsed + 's)\n\n' +
     'FIFO Lots: ' + lotsCreated + ' new lots created\n' +
-    'Portfolio: ' + stats.total + ' rows (' + stats.added + ' new)'
+    'Portfolio: ' + stats.total + ' rows (' + stats.added + ' new)\n' +
+    'Chain Balances: ' + chainStats.total + ' rows (' + chainStats.added + ' new)'
   );
 }
 
@@ -140,8 +143,8 @@ function refreshPortfolio() {
 function buildPortfolioFormulas_(r) {
   return [
     // C: Balance (SUMIFS from all 3 data sheets)
-    // FiatOperations: col O = Destination Wallet, col E = Crypto Asset, col F = Crypto Amount
-    // Transfers: col G = Fee amount, col H = Fee Asset (Chain column inserted at N/F)
+    // FiatOperations: col O = Dest Wallet (14), col N = Chain (13), col E = Crypto Asset, col F = Crypto Amount
+    // Transfers: col F = Fee (5), col G = Fee Asset (6), col K = Chain (10)
     '=SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
       ',FiatOperations!E$2:E$1000,$A' + r + ',FiatOperations!B$2:B$1000,"Buy")' +
     '-SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
@@ -158,8 +161,8 @@ function buildPortfolioFormulas_(r) {
       ',Transfers!B$2:B$1000,$A' + r + ')' +
     '-SUMIFS(Transfers!C$2:C$1000,Transfers!D$2:D$1000,$B' + r +
       ',Transfers!B$2:B$1000,$A' + r + ')' +
-    '-SUMIFS(Transfers!G$2:G$1000,Transfers!D$2:D$1000,$B' + r +
-      ',Transfers!H$2:H$1000,$A' + r + ')',
+    '-SUMIFS(Transfers!F$2:F$1000,Transfers!D$2:D$1000,$B' + r +
+      ',Transfers!G$2:G$1000,$A' + r + ')',
 
     // D: Avg Cost EUR (from FIFO lots)
     '=IFERROR(SUMIFS(FIFOLots!H$2:H$1000,FIFOLots!C$2:C$1000,$A' + r +
@@ -327,8 +330,233 @@ function syncFIFOLots() {
 }
 
 // ═══════════════════════════════════════════════════════
+//  Chain Balances — breakdown by Asset/Wallet/Chain
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Auto-generate rows on ChainBalances sheet.
+ *
+ * Two modes based on wallet type (from Wallets sheet):
+ * - Exchange wallets: one row per asset, Chain = "All", full Portfolio formula (incl. Trades)
+ * - Non-exchange wallets: rows per (asset, wallet, chain), chain-specific formula
+ *
+ * @returns {{ total: number, added: number }}
+ */
+function refreshChainBalances() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('ChainBalances');
+  if (!sheet) return { total: 0, added: 0 };
+
+  // 1. Get exchange wallet names from Wallets sheet
+  var exchanges = getExchangeWallets_(ss);
+
+  // 2. Collect combos: chain-specific for wallets, "All" for exchanges
+  var walletCombos = collectAssetWalletChainCombos_(ss);
+  var exchangeCombos = collectAssetWalletCombos_(ss);
+
+  // 3. Read existing to preserve order
+  var data = sheet.getDataRange().getValues();
+  var ordered = [];
+  var seen = {};
+
+  for (var i = 1; i < data.length; i++) {
+    var a = String(data[i][0] || '').trim();
+    var w = String(data[i][1] || '').trim();
+    var c = String(data[i][2] || '').trim();
+    if (a === '' || a === 'TOTAL') continue;
+    var key = a + '|' + w + '|' + c;
+    if (!seen[key]) {
+      ordered.push({ asset: a, wallet: w, chain: c, isExchange: exchanges[w] || false });
+      seen[key] = true;
+    }
+  }
+
+  // 4. Add new wallet combos (non-exchange only)
+  var added = 0;
+  for (var j = 0; j < walletCombos.length; j++) {
+    if (exchanges[walletCombos[j].wallet]) continue; // skip exchanges
+    var key2 = walletCombos[j].asset + '|' + walletCombos[j].wallet + '|' + walletCombos[j].chain;
+    if (!seen[key2]) {
+      ordered.push({ asset: walletCombos[j].asset, wallet: walletCombos[j].wallet,
+                      chain: walletCombos[j].chain, isExchange: false });
+      seen[key2] = true;
+      added++;
+    }
+  }
+
+  // 5. Add exchange combos (chain = "All")
+  for (var e = 0; e < exchangeCombos.length; e++) {
+    if (!exchanges[exchangeCombos[e].wallet]) continue; // only exchanges
+    var key3 = exchangeCombos[e].asset + '|' + exchangeCombos[e].wallet + '|All';
+    if (!seen[key3]) {
+      ordered.push({ asset: exchangeCombos[e].asset, wallet: exchangeCombos[e].wallet,
+                      chain: 'All', isExchange: true });
+      seen[key3] = true;
+      added++;
+    }
+  }
+
+  var numRows = ordered.length;
+
+  // 6. Clear below header
+  var lastRow = Math.max(sheet.getLastRow(), 2);
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, 6).clear();
+  }
+
+  // 7. Write rows
+  if (numRows > 0) {
+    var vals = [];
+    for (var k = 0; k < numRows; k++) {
+      vals.push([ordered[k].asset, ordered[k].wallet, ordered[k].chain]);
+    }
+    sheet.getRange(2, 1, numRows, 3).setValues(vals);
+
+    var fmls = [];
+    for (var k2 = 0; k2 < numRows; k2++) {
+      var r = k2 + 2;
+      if (ordered[k2].isExchange) {
+        fmls.push(buildExchangeBalanceFormulas_(r));
+      } else {
+        fmls.push(buildChainBalanceFormulas_(r));
+      }
+    }
+    sheet.getRange(2, 4, numRows, 3).setFormulas(fmls);
+  }
+
+  return { total: numRows, added: added };
+}
+
+/**
+ * Build the 3 formula strings for a single ChainBalances row.
+ * @param {number} r - 1-based sheet row number
+ * @returns {string[]} Array of 3 formulas for columns D (Balance), E (EUR Rate), F (Value EUR)
+ */
+function buildChainBalanceFormulas_(r) {
+  return [
+    // D: Balance by chain (FiatOps + Transfers only, no Trades)
+    // FiatOps: col O = Dest Wallet, col N = Chain, col E = Asset, col F = Amount
+    // Transfers: col K = Chain, col F = Fee, col G = Fee Asset
+    '=SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
+      ',FiatOperations!E$2:E$1000,$A' + r +
+      ',FiatOperations!N$2:N$1000,$C' + r +
+      ',FiatOperations!B$2:B$1000,"Buy")' +
+    '-SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
+      ',FiatOperations!E$2:E$1000,$A' + r +
+      ',FiatOperations!N$2:N$1000,$C' + r +
+      ',FiatOperations!B$2:B$1000,"Sell")' +
+    '+SUMIFS(Transfers!C$2:C$1000,Transfers!E$2:E$1000,$B' + r +
+      ',Transfers!B$2:B$1000,$A' + r +
+      ',Transfers!K$2:K$1000,$C' + r + ')' +
+    '-SUMIFS(Transfers!C$2:C$1000,Transfers!D$2:D$1000,$B' + r +
+      ',Transfers!B$2:B$1000,$A' + r +
+      ',Transfers!K$2:K$1000,$C' + r + ')' +
+    '-SUMIFS(Transfers!F$2:F$1000,Transfers!D$2:D$1000,$B' + r +
+      ',Transfers!G$2:G$1000,$A' + r +
+      ',Transfers!K$2:K$1000,$C' + r + ')',
+
+    // E: Current EUR Rate
+    '=IFERROR(INDEX(SORT(FILTER(Rates!A:C,Rates!B:B=$A' + r + '),1,FALSE),1,3),"")',
+
+    // F: Value EUR
+    '=IF(AND(D' + r + '<>"",E' + r + '<>""),D' + r + '*E' + r + ',"")'
+  ];
+}
+
+/**
+ * Build the 3 formula strings for an exchange row on ChainBalances.
+ * Uses the full Portfolio formula (includes Trades), no chain filter.
+ * @param {number} r - 1-based sheet row number
+ * @returns {string[]} Array of 3 formulas for columns D, E, F
+ */
+function buildExchangeBalanceFormulas_(r) {
+  return [
+    // D: Full balance (same as Portfolio — FiatOps + Trades + Transfers, no chain filter)
+    '=SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
+      ',FiatOperations!E$2:E$1000,$A' + r + ',FiatOperations!B$2:B$1000,"Buy")' +
+    '-SUMIFS(FiatOperations!F$2:F$1000,FiatOperations!O$2:O$1000,$B' + r +
+      ',FiatOperations!E$2:E$1000,$A' + r + ',FiatOperations!B$2:B$1000,"Sell")' +
+    '+SUMIFS(Trades!I$2:I$1000,Trades!B$2:B$1000,$B' + r +
+      ',Trades!D$2:D$1000,$A' + r + ',Trades!G$2:G$1000,"Buy")' +
+    '-SUMIFS(Trades!I$2:I$1000,Trades!B$2:B$1000,$B' + r +
+      ',Trades!D$2:D$1000,$A' + r + ',Trades!G$2:G$1000,"Sell")' +
+    '+SUMIFS(Trades!J$2:J$1000,Trades!B$2:B$1000,$B' + r +
+      ',Trades!E$2:E$1000,$A' + r + ',Trades!G$2:G$1000,"Sell")' +
+    '-SUMIFS(Trades!J$2:J$1000,Trades!B$2:B$1000,$B' + r +
+      ',Trades!E$2:E$1000,$A' + r + ',Trades!G$2:G$1000,"Buy")' +
+    '+SUMIFS(Transfers!C$2:C$1000,Transfers!E$2:E$1000,$B' + r +
+      ',Transfers!B$2:B$1000,$A' + r + ')' +
+    '-SUMIFS(Transfers!C$2:C$1000,Transfers!D$2:D$1000,$B' + r +
+      ',Transfers!B$2:B$1000,$A' + r + ')' +
+    '-SUMIFS(Transfers!F$2:F$1000,Transfers!D$2:D$1000,$B' + r +
+      ',Transfers!G$2:G$1000,$A' + r + ')',
+
+    // E: Current EUR Rate
+    '=IFERROR(INDEX(SORT(FILTER(Rates!A:C,Rates!B:B=$A' + r + '),1,FALSE),1,3),"")',
+
+    // F: Value EUR
+    '=IF(AND(D' + r + '<>"",E' + r + '<>""),D' + r + '*E' + r + ',"")'
+  ];
+}
+
+/**
+ * Read Wallets sheet and return a map of exchange wallet IDs.
+ * @returns {Object} Map like { "MEXC": true, "KuCoin": true }
+ */
+function getExchangeWallets_(ss) {
+  var map = {};
+  var walletsSheet = ss.getSheetByName('Wallets');
+  if (!walletsSheet) return map;
+  var data = walletsSheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var walletId = String(data[i][0] || '').trim();
+    var walletType = String(data[i][2] || '').trim();
+    if (walletType === 'Exchange') {
+      map[walletId] = true;
+    }
+  }
+  return map;
+}
+
+// ═══════════════════════════════════════════════════════
 //  Helpers
 // ═══════════════════════════════════════════════════════
+
+/**
+ * Scan FiatOperations and Transfers for unique (asset, wallet, chain) triples.
+ * Trades are excluded (no chain info on exchanges).
+ */
+function collectAssetWalletChainCombos_(ss) {
+  var combos = {};
+  var result = [];
+
+  function add(asset, wallet, chain) {
+    asset = String(asset || '').trim();
+    wallet = String(wallet || '').trim();
+    chain = String(chain || '').trim();
+    if (!asset || !wallet || !chain) return;
+    var key = asset + '|' + wallet + '|' + chain;
+    if (!combos[key]) {
+      combos[key] = true;
+      result.push({ asset: asset, wallet: wallet, chain: chain });
+    }
+  }
+
+  // FiatOperations: col E = Asset (4), col O = Dest Wallet (14), col N = Chain (13)
+  var fiatData = ss.getSheetByName('FiatOperations').getDataRange().getValues();
+  for (var i = 1; i < fiatData.length; i++) {
+    add(fiatData[i][4], fiatData[i][14], fiatData[i][13]);
+  }
+
+  // Transfers: col B = Asset (1), col D/E = From/To Wallet (3/4), col K = Chain (10)
+  var transferData = ss.getSheetByName('Transfers').getDataRange().getValues();
+  for (var k = 1; k < transferData.length; k++) {
+    add(transferData[k][1], transferData[k][4], transferData[k][10]); // asset @ to-wallet @ chain
+    add(transferData[k][1], transferData[k][3], transferData[k][10]); // asset @ from-wallet @ chain
+  }
+
+  return result;
+}
 
 /**
  * Scan all data sheets and collect unique (asset, wallet) pairs.
