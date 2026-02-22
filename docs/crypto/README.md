@@ -127,7 +127,7 @@ Trades         ─┘      └──> ChainBalances (total balance for exchanges
 - Fiat currency rates (RUB/EUR) in the Rates sheet
 - Data entry in FiatOperations, Trades, Transfers
 - FIFO lot wallet tracking: lots stay at purchase wallet (transfer tracking not yet implemented)
-- **Summary sheet**: set up once with formulas and charts from [formulas.md](docs/crypto/formulas.md#summary-formula-based-no-script); then it updates automatically from Portfolio and other sheets
+- ~~**Summary sheet**~~: **Done** (v2.1) — 9 data sections + 8 charts, fully formula-based, auto-updates from Portfolio and other sheets. See [formulas.md](docs/crypto/formulas.md#summary-formulas-formula-based-no-script)
 
 ## Wallets
 

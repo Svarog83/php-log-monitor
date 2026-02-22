@@ -151,6 +151,116 @@ Uses `buildExchangeBalanceFormulas_()` — same SUMIFS structure as Portfolio Ba
 | E | Current Rate EUR (latest rate lookup) |
 | F | Value EUR (`=D×E`) |
 
+## Summary Formulas (formula-based, no script)
+
+The Summary sheet is a dashboard with formula-based "pivot tables" and 8 embedded charts.
+All formulas auto-update when Portfolio, FiatOperations, Trades, Transfers, or FIFOLots data changes.
+
+### KPI Cards (Rows 3-5)
+
+| Cell | Name | Formula |
+|------|------|---------|
+| B3 | Portfolio Value | `=SUM(Portfolio!G2:G1000)` |
+| D3 | Fiat Invested | `=SUMIFS(FiatOperations!I2:I1000,FiatOperations!B2:B1000,"Buy")` |
+| F3 | Net P/L EUR | `=B3-D3` |
+| B4 | Fiat Withdrawn | `=SUMIFS(FiatOperations!I2:I1000,FiatOperations!B2:B1000,"Sell")` |
+| D4 | Losses (Lost) | `=SUMIFS(Portfolio!G2:G1000,Portfolio!B2:B1000,"Lost")` |
+| F4 | P/L % | `=IFERROR(F3/D3,0)` |
+| B5 | Total Fees | `=SUM(FiatOperations!L2:L1000)+SUM(Trades!O2:O1000)+SUM(Transfers!I2:I1000)` |
+| D5 | Avg Hold Days | `=IFERROR(SUMPRODUCT((FIFOLots!F$2:F$100*1)*(FIFOLots!J$2:J$100*1))/SUMPRODUCT(FIFOLots!F$2:F$100*1),"")` |
+| F5 | Tax-Free Value | `=SUM(Portfolio!M2:M1000)` |
+
+### Section 1: Allocation by Asset (Rows 7-18) — Pie Chart
+
+Dynamic aggregation using QUERY:
+```
+A9: =QUERY(Portfolio!A2:G1000,"SELECT A, SUM(G) WHERE G > 0 GROUP BY A ORDER BY SUM(G) DESC LABEL A '', SUM(G) ''",0)
+C9: =IFERROR(B9/$B$3,"")  (% of total, copied down C9:C18)
+```
+
+### Section 2: Allocation by Storage Type (Rows 20-28) — Pie Chart
+
+Hardcoded wallet types, SUMPRODUCT with VLOOKUP for aggregation:
+```
+B22: =SUMPRODUCT((IFERROR(VLOOKUP(Portfolio!B$2:B$100,Wallets!$A:$C,3,FALSE),"")="Exchange")*IFERROR(Portfolio!G$2:G$100*1,0))
+```
+Same pattern for Hardware, Software, Custodial. `C22: =IFERROR(B22/$B$3,"")` for percentage.
+
+### Section 3: Allocation by Risk Level (Rows 30-38) — Pie Chart
+
+Same SUMPRODUCT approach, VLOOKUP column 4 (Risk) from Wallets:
+```
+B32: =SUMPRODUCT((IFERROR(VLOOKUP(Portfolio!B$2:B$100,Wallets!$A:$D,4,FALSE),"")="Low")*IFERROR(Portfolio!G$2:G$100*1,0))
+```
+Same pattern for Medium, High, Critical.
+
+### Section 4: Allocation by Wallet (Rows 40-52) — Bar Chart
+
+Dynamic using QUERY grouped by wallet:
+```
+A42: =QUERY(Portfolio!B2:G1000,"SELECT B, SUM(G) WHERE G > 0 GROUP BY B ORDER BY SUM(G) DESC LABEL B '', SUM(G) ''",0)
+C42: =IFERROR(VLOOKUP(A42,Wallets!A:C,3,FALSE),"")  (Type lookup)
+D42: =IFERROR(B42/$B$3,"")  (% of total)
+```
+
+### Section 5: Cost vs Value per Asset (Rows 54-66) — Grouped Column Chart
+
+QUERY returning Cost EUR (col E) and Value EUR (col G) per asset:
+```
+A56: =QUERY(Portfolio!A2:G1000,"SELECT A, SUM(E), SUM(G) WHERE G > 0 GROUP BY A ORDER BY SUM(G) DESC LABEL A '', SUM(E) '', SUM(G) ''",0)
+D56: =IFERROR(C56-B56,"")  (P/L per asset)
+```
+
+### Section 6: Investment Overview (Rows 68-76) — Column Chart
+
+References KPI cells: `B70: =D3` (Fiat Invested), `B71: =B4` (Withdrawn), `B72: =B5` (Fees), `B73: =B3` (Current Portfolio), `B74: =F3` (Net P/L).
+
+### Section 7: Stablecoin vs Volatile (Rows 78-86) — Pie Chart
+
+```
+B80: =SUMIFS(Portfolio!G$2:G$1000,Portfolio!A$2:A$1000,"USDT")+SUMIFS(Portfolio!G$2:G$1000,Portfolio!A$2:A$1000,"USDC")
+B81: =B3-B80  (everything else is volatile)
+```
+
+### Section 8: Trade Statistics (Rows 88-105) — Table Only
+
+| Cell | Name | Formula |
+|------|------|---------|
+| B90 | Total Trades | `=COUNTA(Trades!A2:A1000)` |
+| B91 | Total Volume EUR | `=SUM(Trades!N2:N1000)` |
+| B92 | Avg Trade Size | `=IFERROR(AVERAGE(Trades!N2:N1000),"")` |
+| B93 | Largest Trade | `=MAX(Trades!N2:N1000)` |
+| B94 | Smallest Trade | `=MIN(Trades!N2:N1000)` |
+| B97 | MEXC Count | `=COUNTIF(Trades!B2:B1000,"MEXC")` |
+| C97 | MEXC Volume | `=SUMIFS(Trades!N2:N1000,Trades!B2:B1000,"MEXC")` |
+| B101 | Buy Trades | `=COUNTIF(Trades!G2:G1000,"Buy")` |
+| B102 | Sell Trades | `=COUNTIF(Trades!G2:G1000,"Sell")` |
+| B103 | First Trade | `=MIN(Trades!A2:A1000)` |
+| B104 | Last Trade | `=MAX(Trades!A2:A1000)` |
+| B105 | Trading Period | `=IFERROR(B104-B103,"")` |
+
+### Section 9: Holding & Tax Analysis (Rows 107-115) — Bar Chart
+
+Per-asset weighted average holding days:
+```
+B109: =IFERROR(SUMPRODUCT((FIFOLots!C$2:C$1000="BTC")*(FIFOLots!F$2:F$1000*1)*(FIFOLots!J$2:J$1000*1))/SUMPRODUCT((FIFOLots!C$2:C$1000="BTC")*(FIFOLots!F$2:F$1000*1)),"")
+C109: =SUMIFS(Portfolio!M2:M1000,Portfolio!A2:A1000,"BTC")
+```
+Same pattern for ETH, SOL, USDT, USDC, COCA.
+
+### Charts (8 total, embedded in Summary sheet)
+
+| # | Type | Title | Data Source |
+|---|------|-------|-------------|
+| 1 | Pie | Asset Allocation | A9:B18 |
+| 2 | Pie | Storage Type | A22:B25 |
+| 3 | Pie | Risk Level | A32:B35 |
+| 4 | Bar | Allocation by Wallet | A42:B51 |
+| 5 | Column | Cost Basis vs Market Value | A56:C65 |
+| 6 | Column | Investment Overview | A70:B74 |
+| 7 | Pie | Stablecoin vs Volatile | A80:B81 |
+| 8 | Bar | Avg Holding Days | A109:B114 |
+
 ## Adding Formulas to New Rows
 
 When the Apps Script is installed, use **Refresh All** — formulas are auto-generated.

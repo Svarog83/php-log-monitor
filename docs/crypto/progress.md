@@ -1,6 +1,6 @@
 # Crypto Tracker - Progress
 
-## Status: v2.0 Complete (2026-02-15)
+## Status: v2.1 Complete (2026-02-22)
 
 ## What's Done
 
@@ -31,17 +31,31 @@
 - [x] **Idempotent sell processing**: Safe to run multiple times; resets before reprocessing
 - [x] **Refresh All pipeline**: updateCryptoRates → syncFIFOLots → processFIFOSells → refreshPortfolio → refreshChainBalances
 
+### v2.1 (2026-02-22) — Summary Dashboard
+- [x] **Summary sheet** (9th tab): formula-based dashboard with 9 data sections and 8 embedded charts
+- [x] **KPI cards**: Portfolio Value, Fiat Invested, Net P/L, P/L %, Fees, Avg Hold Days, Tax-Free Value, Losses
+- [x] **Allocation by Asset**: QUERY-based dynamic pivot + pie chart
+- [x] **Allocation by Storage Type**: Exchange(Hot)/Hardware(Cold)/Software/Custodial + pie chart
+- [x] **Allocation by Risk Level**: Low/Medium/High/Critical + pie chart
+- [x] **Allocation by Wallet**: QUERY-based dynamic pivot + horizontal bar chart
+- [x] **Cost vs Value per Asset**: Grouped column chart (cost basis vs market value)
+- [x] **Investment Overview**: Fiat invested vs current portfolio + column chart
+- [x] **Stablecoin vs Volatile**: Portfolio risk exposure split + pie chart
+- [x] **Trade Statistics**: Total trades, volume, avg size, by exchange, buy/sell ratio, trading period
+- [x] **Holding & Tax Analysis**: Weighted avg holding days per asset + bar chart (365-day tax threshold)
+- [x] **Auto-update**: All formula-based — updates automatically when Portfolio/Trades/FiatOperations change (no script)
+
 ### Documentation
 - [x] README.md — full usage guide with workflows for all transaction types
 - [x] plan.md — architecture, sheet definitions, design decisions
 - [x] progress.md — this file
-- [x] formulas.md — complete formula reference
+- [x] formulas.md — complete formula reference (including Summary section)
 - [x] data-flow.md — investment workflow examples and data integrity rules
 
 ## What's Left / Future Work
 
 - [ ] FIFO lot wallet tracking on transfers (lots stay at purchase wallet currently)
-- [ ] Charts/dashboards for portfolio allocation and performance
+- [x] Charts/dashboards for portfolio allocation and performance (Summary sheet, v2.1)
 - [ ] Conditional formatting for P/L (green/red), tax-free status highlighting
 - [ ] Import/export scripts for exchange trade history (CSV import)
 - [ ] ECB API integration for fiat rates (RUB/EUR)
