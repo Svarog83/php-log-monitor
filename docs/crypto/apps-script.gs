@@ -41,17 +41,17 @@ function onOpen() {
 // ═══════════════════════════════════════════════════════
 
 function refreshAll() {
-  const t0 = new Date();
-  //const ratesResult = updateCryptoRates();
-  const lotsCreated = syncFIFOLots();
-  const stats = refreshPortfolio();
-  const chainStats = refreshChainBalances();
-  const elapsed = ((new Date() - t0) / 1000).toFixed(1);
+  var t0 = new Date();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var lotsCreated = syncFIFOLots();
+  var sellsProcessed = processFIFOSells_(ss);
+  var stats = refreshPortfolio();
+  var chainStats = refreshChainBalances();
+  var elapsed = ((new Date() - t0) / 1000).toFixed(1);
 
   SpreadsheetApp.getUi().alert(
     'Refresh complete (' + elapsed + 's)\n\n' +
-    //'Rates: ' + ratesResult.updated + ' updated, ' + ratesResult.errors.length + ' errors\n' +
-    'FIFO Lots: ' + lotsCreated + ' new lots created\n' +
+    'FIFO Lots: ' + lotsCreated + ' new lots, ' + sellsProcessed + ' sells processed\n' +
     'Portfolio: ' + stats.total + ' rows (' + stats.added + ' new)\n' +
     'Chain Balances: ' + chainStats.total + ' rows (' + chainStats.added + ' new)'
   );
@@ -331,11 +331,9 @@ function buildPortfolioFormulas_(r) {
     '-SUMIFS(Transfers!F$2:F$1000,Transfers!D$2:D$1000,$B' + r +
       ',Transfers!G$2:G$1000,$A' + r + ')',
 
-    // D: Avg Cost EUR (from FIFO lots)
+    // D: Avg Cost EUR (weighted average across all FIFO lots for this asset)
     '=IFERROR(SUMIFS(FIFOLots!H$2:H$1000,FIFOLots!C$2:C$1000,$A' + r +
-      ',FIFOLots!D$2:D$1000,$B' + r +
-      ')/SUMIFS(FIFOLots!F$2:F$1000,FIFOLots!C$2:C$1000,$A' + r +
-      ',FIFOLots!D$2:D$1000,$B' + r + '),"")',
+      ')/SUMIFS(FIFOLots!F$2:F$1000,FIFOLots!C$2:C$1000,$A' + r + '),"")',
 
     // E: Total Cost EUR
     '=IF(AND(C' + r + '<>"",D' + r + '<>""),C' + r + '*D' + r + ',"")',
@@ -426,28 +424,53 @@ function syncFIFOLots() {
     });
   }
 
-  // ── From Trades (Buy direction = creates lot for base asset) ──
+  // ── From Trades (Buy direction = creates lot for RECEIVED base asset) ──
   var tradeData = ss.getSheetByName('Trades').getDataRange().getValues();
   for (var ti = 1; ti < tradeData.length; ti++) {
-    var tradeRef = 'Trade #' + ti;
-    if (existingSources[tradeRef]) continue;
-    if (String(tradeData[ti][6]).trim() !== 'Buy') continue;
+    var direction = String(tradeData[ti][6]).trim();
 
-    var tFilledQty = Number(tradeData[ti][8]) || 0;
-    if (tFilledQty === 0) continue;
+    if (direction === 'Buy') {
+      var buyRef = 'Trade #' + ti;
+      if (existingSources[buyRef]) continue;
 
-    var tAmtEUR = Number(tradeData[ti][13]) || 0;
+      var tFilledQty = Number(tradeData[ti][8]) || 0;
+      if (tFilledQty === 0) continue;
+      var tAmtEUR = Number(tradeData[ti][13]) || 0;
 
-    newLots.push({
-      lotId: nextLotId++,
-      date: tradeData[ti][0],
-      asset: String(tradeData[ti][3]),
-      wallet: String(tradeData[ti][1] || ''),
-      qtyAcquired: tFilledQty,
-      qtyRemaining: tFilledQty,
-      costPerUnit: tAmtEUR > 0 ? tAmtEUR / tFilledQty : 0,
-      source: tradeRef
-    });
+      newLots.push({
+        lotId: nextLotId++,
+        date: tradeData[ti][0],
+        asset: String(tradeData[ti][3]),        // Base asset (received)
+        wallet: String(tradeData[ti][1] || ''),
+        qtyAcquired: tFilledQty,
+        qtyRemaining: tFilledQty,
+        costPerUnit: tAmtEUR > 0 ? tAmtEUR / tFilledQty : 0,
+        source: buyRef
+      });
+    }
+
+    // ── Sell direction = creates lot for RECEIVED quote asset ──
+    // When you sell ETH for USDC, the received USDC needs a cost lot.
+    // Cost basis = EUR value of the trade (same as the sold asset's EUR value).
+    if (direction === 'Sell') {
+      var sellRef = 'Trade #' + ti + ' (quote)';
+      if (existingSources[sellRef]) continue;
+
+      var tOrderAmt = Number(tradeData[ti][9]) || 0;  // Order Amount = quote received
+      if (tOrderAmt === 0) continue;
+      var tSellAmtEUR = Number(tradeData[ti][13]) || 0;
+
+      newLots.push({
+        lotId: nextLotId++,
+        date: tradeData[ti][0],
+        asset: String(tradeData[ti][4]),        // Quote asset (received)
+        wallet: String(tradeData[ti][1] || ''),
+        qtyAcquired: tOrderAmt,
+        qtyRemaining: tOrderAmt,
+        costPerUnit: tSellAmtEUR > 0 ? tSellAmtEUR / tOrderAmt : 0,
+        source: sellRef
+      });
+    }
   }
 
   if (newLots.length === 0) return 0;
@@ -494,6 +517,116 @@ function syncFIFOLots() {
   lotsSheet.getRange(startRow, 10, n, 2).setFormulas(fmlJK);
 
   return n;
+}
+
+// ═══════════════════════════════════════════════════════
+//  FIFO Sell Processing — reduce Qty Remaining on sells
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Process all sell/disposal operations against FIFO lots.
+ * Idempotent: resets Qty Remaining to Qty Acquired, then processes
+ * all disposals chronologically using FIFO order (oldest lots first).
+ *
+ * Disposals processed:
+ *   - Trades with Direction = "Sell" → disposes base asset
+ *   - FiatOperations with Type = "Sell" → disposes crypto asset
+ *
+ * FIFO is applied globally per asset (not per wallet), consistent
+ * with the predominant interpretation for German crypto tax.
+ *
+ * @param {SpreadsheetApp.Spreadsheet} ss
+ * @returns {number} Number of disposals processed
+ */
+function processFIFOSells_(ss) {
+  var lotsSheet = ss.getSheetByName('FIFOLots');
+  var lotsData = lotsSheet.getDataRange().getValues();
+
+  // 1. Build lot objects, reset Qty Remaining → Qty Acquired
+  var lots = [];
+  for (var i = 1; i < lotsData.length; i++) {
+    lots.push({
+      row: i + 1,
+      date: lotsData[i][1],
+      asset: String(lotsData[i][2] || '').trim(),
+      qtyAcquired: Number(lotsData[i][4]) || 0,
+      qtyRemaining: Number(lotsData[i][4]) || 0
+    });
+  }
+
+  // 2. Collect all disposals
+  var disposals = [];
+
+  // Trades: Direction = "Sell" → disposes the base asset
+  var tradeData = ss.getSheetByName('Trades').getDataRange().getValues();
+  for (var ti = 1; ti < tradeData.length; ti++) {
+    if (String(tradeData[ti][6]).trim() !== 'Sell') continue;
+    var tQty = Number(tradeData[ti][8]) || 0;
+    if (tQty <= 0) continue;
+    disposals.push({
+      date: tradeData[ti][0],
+      asset: String(tradeData[ti][3]).trim(),
+      qty: tQty
+    });
+  }
+
+  // FiatOperations: Type = "Sell" → disposes crypto asset
+  var fiatData = ss.getSheetByName('FiatOperations').getDataRange().getValues();
+  for (var fi = 1; fi < fiatData.length; fi++) {
+    if (String(fiatData[fi][1]).trim() !== 'Sell') continue;
+    var fQty = Number(fiatData[fi][5]) || 0;
+    if (fQty <= 0) continue;
+    disposals.push({
+      date: fiatData[fi][0],
+      asset: String(fiatData[fi][4]).trim(),
+      qty: fQty
+    });
+  }
+
+  if (disposals.length === 0) return 0;
+
+  // 3. Sort disposals by date
+  disposals.sort(function(a, b) {
+    var da = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
+    var db = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
+    return da - db;
+  });
+
+  // 4. Process each disposal (FIFO: oldest lots first)
+  for (var s = 0; s < disposals.length; s++) {
+    var d = disposals[s];
+    var remaining = d.qty;
+
+    // Gather lots for this asset, sorted by acquisition date ASC
+    var assetLots = [];
+    for (var li = 0; li < lots.length; li++) {
+      if (lots[li].asset === d.asset) assetLots.push(lots[li]);
+    }
+    assetLots.sort(function(a, b) {
+      var da = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
+      var db = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
+      return da - db;
+    });
+
+    for (var ai = 0; ai < assetLots.length && remaining > 1e-10; ai++) {
+      var lot = assetLots[ai];
+      if (lot.qtyRemaining <= 1e-10) continue;
+      var consume = Math.min(lot.qtyRemaining, remaining);
+      lot.qtyRemaining -= consume;
+      remaining -= consume;
+    }
+  }
+
+  // 5. Write updated Qty Remaining (column F)
+  if (lots.length > 0) {
+    var updates = [];
+    for (var u = 0; u < lots.length; u++) {
+      updates.push([lots[u].qtyRemaining < 1e-10 ? 0 : lots[u].qtyRemaining]);
+    }
+    lotsSheet.getRange(2, 6, updates.length, 1).setValues(updates);
+  }
+
+  return disposals.length;
 }
 
 // ═══════════════════════════════════════════════════════

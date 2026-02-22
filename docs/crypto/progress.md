@@ -1,53 +1,57 @@
 # Crypto Tracker - Progress
 
-## Status: v1.0 Complete (2026-02-14)
+## Status: v2.0 Complete (2026-02-15)
 
 ## What's Done
 
-### Spreadsheet Structure
-- [x] 7 sheet tabs created: Portfolio, FiatOperations, Trades, Transfers, FIFOLots, Rates, Wallets
-- [x] All headers set for all sheets
-- [x] Auto-calculated formulas in all sheets
+### v1.0 (2026-02-14) — Base Structure
+- [x] 7 sheet tabs: Portfolio, FiatOperations, Trades, Transfers, FIFOLots, Rates, Wallets
+- [x] All headers and auto-calculated formulas
+- [x] Wallets: 6 entries (MEXC, KuCoin, Ledger, HOT, Coca, Wirex)
+- [x] Rates: Initial EUR rates for BTC, ETH, SOL, XLM, COCA, USDT, RUB
+- [x] FiatOperations: Buy/Sell types with auto-calc columns (Price/Unit, EUR Rate, Amount EUR, Fee EUR)
+- [x] Trades: 10+ sample trades from exchange exports
+- [x] Transfers: With chain tracking
+- [x] FIFOLots: Lot creation from Buy trades
+- [x] Portfolio: SUMIFS balance aggregation from all data sheets
+- [x] Data validation dropdowns on all sheets
+- [x] Apps Script: menu, refreshPortfolio, syncFIFOLots
 
-### Reference Sheets
-- [x] Wallets: 5 sample entries (Bybit, Binance, Ledger, MetaMask, P2P)
-- [x] Rates: Initial EUR rates for BTC, ETH, SOL, XLM, COCA, USDT, RUB (Feb 2026 dates)
-
-### Data Entry Sheets
-- [x] FiatOperations: Headers + formula template (row 2 has working sample)
-  - Auto-calculates: Price Per Unit, EUR Rate (VLOOKUP), Fiat Amount EUR, Fee EUR
-- [x] Trades: Headers + 10 sample trades from user's Bybit export
-  - Auto-calculates: Base/Quote Asset (from Pair), Order Amount, EUR Rate (VLOOKUP), Amount EUR, Fee EUR
-- [x] Transfers: Headers + formula template (row 2 has working sample)
-  - Auto-calculates: EUR Rate (VLOOKUP), Fee EUR
-
-### Calculated Sheets
-- [x] FIFOLots: Headers + 10 lots matching sample trades
-  - Auto-calculates: Total Cost EUR, Days Held, Tax-Free flag
-- [x] Portfolio: 6 asset/wallet rows + TOTAL row
-  - Auto-calculates: Balance (SUMIFS from all data sheets), Avg Cost EUR, Total Cost EUR,
-    Current Rate/Value EUR, Unrealized P/L (EUR and %), Last Purchase Date,
-    Avg Holding Days, Qty >1 Year, Tax-Free Value EUR
+### v2.0 (2026-02-15) — Full Automation
+- [x] **ChainBalances sheet** (8th tab): chain-by-chain breakdown for wallets, total balance for exchanges
+- [x] **Exchange detection**: Wallets sheet Type="Exchange" → no chain breakdown in ChainBalances
+- [x] **CoinGecko API integration**: Auto-fetch EUR rates for BTC, ETH, SOL, USDT, USDC, COCA
+- [x] **Secure API key storage**: CoinGecko Demo key stored via PropertiesService
+- [x] **COCA rate via contract address**: Polygon contract `0xe44Fd7fCb2b1581822D0c862B68222998a0c299a`
+- [x] **FiatOperations visual improvements**: Sell rows highlighted, summary block (total Buy/Sell/Diff EUR)
+- [x] **FIFO sell processing (automated)**: `processFIFOSells_()` reduces Qty Remaining in FIFO order
+- [x] **Sell quote lot creation**: Sell trades in Trades auto-create FIFO lots for received quote asset
+- [x] **Global avg cost**: Portfolio Avg Cost EUR aggregates across all wallets (handles transfers)
+- [x] **FiatOperations sells in FIFO**: Card spending (Sell in FiatOps) reduces lots automatically
+- [x] **Idempotent sell processing**: Safe to run multiple times; resets before reprocessing
+- [x] **Refresh All pipeline**: updateCryptoRates → syncFIFOLots → processFIFOSells → refreshPortfolio → refreshChainBalances
 
 ### Documentation
-- [x] README.md with full usage guide
-- [x] plan.md with architecture and design decisions
-- [x] progress.md (this file)
-- [x] formulas.md with all formula references
+- [x] README.md — full usage guide with workflows for all transaction types
+- [x] plan.md — architecture, sheet definitions, design decisions
+- [x] progress.md — this file
+- [x] formulas.md — complete formula reference
+- [x] data-flow.md — investment workflow examples and data integrity rules
 
 ## What's Left / Future Work
 
-- [ ] Manual data validation (dropdowns) in Google Sheets UI -- MCP can't set this
-- [ ] Conditional formatting (P/L colors, tax-free highlighting)
-- [ ] Charts/dashboards
-- [ ] Google Apps Script for auto-populating FIFO lots from Trades
-- [ ] API integration for live EUR rates (CoinGecko, ECB)
-- [ ] Auto-generate Portfolio rows from UNIQUE(assets+wallets)
-- [ ] Import/export scripts for exchange trade history
+- [ ] FIFO lot wallet tracking on transfers (lots stay at purchase wallet currently)
+- [ ] Charts/dashboards for portfolio allocation and performance
+- [ ] Conditional formatting for P/L (green/red), tax-free status highlighting
+- [ ] Import/export scripts for exchange trade history (CSV import)
+- [ ] ECB API integration for fiat rates (RUB/EUR)
+- [ ] Realized P/L tracking (sell price minus cost basis)
+- [ ] Annual tax report generation (gains from lots held <1 year)
+- [ ] Portfolio value history tracking (snapshot over time)
 
 ## Known Issues
 
-- USDT balance on Bybit shows negative (-258) because sample data has more trades spending
-  USDT than was deposited via FiatOps+Transfers. This is correct behavior -- it indicates
-  more fiat deposit records need to be added to match actual trading history.
-- Avg Holding Days for USDT row is not calculated (USDT is not tracked as FIFO lots)
+- FIFO lots stay at purchase wallet — if you buy ETH on MEXC and transfer to Ledger,
+  the lot's wallet is still "MEXC". Avg Cost uses global aggregation to compensate.
+- CoinGecko Demo API: 30 req/min, 10K/month limit. Current usage: 2 calls per refresh.
+- Stablecoin rates (USDT, USDC) are fetched but typically ≈ 1 EUR ± small fluctuation.
