@@ -1,20 +1,19 @@
 /**
- * Crypto Tracker — Portfolio & FIFO Automation
+ * Crypto Tracker — Portfolio, FIFO & Rates Automation
  *
- * Adds a "Crypto Tracker" menu to the spreadsheet with:
- *   - Refresh All:            sync FIFO lots from new buys + rebuild Portfolio
- *   - Refresh Portfolio Only: rebuild Portfolio rows from current data
- *   - Sync FIFO Lots Only:    create FIFO lots from new Buy trades/fiat ops
+ * Adds a "Crypto Tracker" menu with:
+ *   - Refresh All:              rates → FIFO lots → FIFO sells → Portfolio → ChainBalances
+ *   - Update Crypto Rates:      fetch BTC/ETH/SOL/USDT/USDC/COCA from CoinGecko
+ *   - Refresh Portfolio Only:   rebuild Portfolio rows from current data
+ *   - Refresh Chain Balances:   chain breakdown (wallets) / totals (exchanges)
+ *   - Sync FIFO Lots Only:      create lots from Buy trades/fiat ops + quote lots from Sells
+ *   - Set CoinGecko API Key:    store Demo key in Script Properties
  *
- * Workflow:
- *   1. Add your trades/fiat operations/transfers to the data sheets
- *   2. Click "Crypto Tracker → Refresh All"
- *   3. Portfolio and FIFO Lots update automatically
+ * FIFO sell processing is fully automated:
+ *   - Trades (Sell direction) and FiatOperations (Sell type) reduce oldest lots first
+ *   - Sell trades also create FIFO lots for the received quote asset
  *
- * Note: FIFO sell processing (reducing Qty Remaining on oldest lots)
- * is still manual for auditability. The script only creates lots from buys.
- *
- * @version 1.0.0
+ * @version 2.0.0
  * @author AI-assisted
  */
 
@@ -259,13 +258,22 @@ function refreshPortfolio() {
 
   var numRows = ordered.length;
 
-  // 4. Clear everything below header
+  // 4. Set header row with filter-aware subtotals (sum on second line, rounded)
+  portfolio.getRange(1, 3).setFormula('="Balance" & CHAR(10) & ROUND(SUBTOTAL(109,C2:C1000), 5)');
+  portfolio.getRange(1, 5).setFormula('="Total Cost EUR" & CHAR(10) & ROUND(SUBTOTAL(109,E2:E1000), 2)');
+  portfolio.getRange(1, 7).setFormula('="Current Value EUR" & CHAR(10) & ROUND(SUBTOTAL(109,G2:G1000), 2)');
+  portfolio.getRange(1, 8).setFormula('="Unrealized P/L EUR" & CHAR(10) & ROUND(SUBTOTAL(109,H2:H1000), 2)');
+  portfolio.getRange(1, 9).setFormula('=IF(SUBTOTAL(109,E2:E1000)=0,"Unrealized P/L %" & CHAR(10) & "","Unrealized P/L %" & CHAR(10) & ROUND(SUBTOTAL(109,H2:H1000)/SUBTOTAL(109,E2:E1000), 2))');
+  portfolio.setRowHeight(1, 48);
+  portfolio.getRange(1, 1, 1, 13).setWrap(true);
+
+  // 5. Clear everything below header
   var lastRow = Math.max(portfolio.getLastRow(), 2);
   if (lastRow > 1) {
-    portfolio.getRange(2, 1, lastRow - 1, 13).clear();
+    portfolio.getRange(2, 1, lastRow, 13).clear();
   }
 
-  // 5. Write all portfolio rows
+  // 6. Write all portfolio rows
   if (numRows > 0) {
     // Columns A-B: values
     var vals = [];
@@ -281,23 +289,6 @@ function refreshPortfolio() {
     }
     portfolio.getRange(2, 3, numRows, 11).setFormulas(fmls);
   }
-
-  // 6. TOTAL row (leave one empty row gap)
-  var totalRow = numRows + 3;
-  var endDataRow = numRows + 1;
-
-  portfolio.getRange(totalRow, 1).setValue('TOTAL');
-  portfolio.getRange(totalRow, 5).setFormula('=SUM(E2:E' + endDataRow + ')');
-  portfolio.getRange(totalRow, 7).setFormula('=SUM(G2:G' + endDataRow + ')');
-  portfolio.getRange(totalRow, 8).setFormula('=SUM(H2:H' + endDataRow + ')');
-  portfolio.getRange(totalRow, 9).setFormula('=IF(E' + totalRow + '<>0,H' + totalRow + '/E' + totalRow + ',"")');
-  portfolio.getRange(totalRow, 13).setFormula('=SUM(M2:M' + endDataRow + ')');
-
-  // Style TOTAL row
-  var totalRange = portfolio.getRange(totalRow, 1, 1, 13);
-  totalRange.setFontWeight('bold');
-  totalRange.setBorder(true, null, null, null, null, null,
-    '#283593', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
   return { total: numRows, added: added };
 }
