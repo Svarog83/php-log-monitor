@@ -27,9 +27,12 @@ function onOpen() {
     .createMenu('Crypto Tracker')
     .addItem('Refresh All', 'refreshAll')
     .addSeparator()
+    .addItem('Update Crypto Rates', 'updateCryptoRates')
     .addItem('Refresh Portfolio Only', 'refreshPortfolio')
     .addItem('Refresh Chain Balances Only', 'refreshChainBalances')
     .addItem('Sync FIFO Lots Only', 'syncFIFOLots')
+    .addSeparator()
+    .addItem('Set CoinGecko API Key...', 'setCoinGeckoApiKey')
     .addToUi();
 }
 
@@ -39,6 +42,7 @@ function onOpen() {
 
 function refreshAll() {
   const t0 = new Date();
+  //const ratesResult = updateCryptoRates();
   const lotsCreated = syncFIFOLots();
   const stats = refreshPortfolio();
   const chainStats = refreshChainBalances();
@@ -46,10 +50,173 @@ function refreshAll() {
 
   SpreadsheetApp.getUi().alert(
     'Refresh complete (' + elapsed + 's)\n\n' +
+    //'Rates: ' + ratesResult.updated + ' updated, ' + ratesResult.errors.length + ' errors\n' +
     'FIFO Lots: ' + lotsCreated + ' new lots created\n' +
     'Portfolio: ' + stats.total + ' rows (' + stats.added + ' new)\n' +
     'Chain Balances: ' + chainStats.total + ' rows (' + chainStats.added + ' new)'
   );
+}
+
+// ═══════════════════════════════════════════════════════
+//  Crypto Rates — CoinGecko Demo API
+// ═══════════════════════════════════════════════════════
+
+var CRYPTO_RATE_CONFIG_ = {
+  baseUrl: 'https://api.coingecko.com/api/v3',
+  // Standard coins: asset symbol → CoinGecko ID
+  coins: {
+    'BTC':  'bitcoin',
+    'ETH':  'ethereum',
+    'SOL':  'solana',
+    'USDT': 'tether',
+    'USDC': 'usd-coin'
+  },
+  // Tokens not listed by coin ID — use contract address
+  contracts: {
+    'COCA': { platform: 'polygon-pos', address: '0x7B12598E3616261df1C05EC28De0d2fB10c1F206' }
+  },
+  vsCurrency: 'eur'
+};
+
+/**
+ * One-time setup: store your CoinGecko Demo API key in Script Properties.
+ * Run this once from the Apps Script editor, then the key persists securely.
+ *
+ * Usage: setCoinGeckoApiKey('CG-yourKeyHere')
+ */
+function setCoinGeckoApiKey(key) {
+  if (!key) {
+    SpreadsheetApp.getUi().alert(
+      'Usage: run setCoinGeckoApiKey("CG-yourKeyHere") from the script editor.\n\n' +
+      'Get a free Demo key at https://www.coingecko.com/en/api/pricing');
+    return;
+  }
+  PropertiesService.getScriptProperties().setProperty('COINGECKO_API_KEY', key);
+  SpreadsheetApp.getUi().alert('CoinGecko API key saved successfully.');
+}
+
+/** @returns {string} API key from Script Properties */
+function getCoinGeckoApiKey_() {
+  return PropertiesService.getScriptProperties().getProperty('COINGECKO_API_KEY') || '';
+}
+
+/**
+ * Build fetch options with the CoinGecko Demo API key header.
+ * @returns {Object} options for UrlFetchApp.fetch
+ */
+function cgFetchOptions_() {
+  var key = getCoinGeckoApiKey_();
+  var opts = { muteHttpExceptions: true };
+  if (key) {
+    opts.headers = { 'x-cg-demo-api-key': key };
+  }
+  return opts;
+}
+
+/**
+ * Fetch current EUR rates for configured crypto assets from CoinGecko
+ * and upsert them into the Rates sheet with today's date.
+ *
+ * API key is read from Script Properties (set via setCoinGeckoApiKey).
+ * Demo tier: 30 req/min, 10 000/month — our 2 calls per run are well within limits.
+ *
+ * @returns {{ updated: number, errors: string[] }}
+ */
+function updateCryptoRates() {
+  var cfg = CRYPTO_RATE_CONFIG_;
+  var rates = {};
+  var errors = [];
+  var opts = cgFetchOptions_();
+
+  if (!getCoinGeckoApiKey_()) {
+    errors.push('No API key — run setCoinGeckoApiKey("CG-...") first');
+  }
+
+  // ── Step 1: Standard coins (BTC, ETH, SOL) — single batch call ──
+  var ids = [];
+  var idToAsset = {};
+  for (var asset in cfg.coins) {
+    ids.push(cfg.coins[asset]);
+    idToAsset[cfg.coins[asset]] = asset;
+  }
+
+  if (ids.length > 0) {
+    try {
+      var url1 = cfg.baseUrl + '/simple/price?ids=' + ids.join(',') +
+                 '&vs_currencies=' + cfg.vsCurrency;
+      var resp1 = UrlFetchApp.fetch(url1, opts);
+      if (resp1.getResponseCode() === 200) {
+        var data1 = JSON.parse(resp1.getContentText());
+        for (var cgId in data1) {
+          if (data1[cgId][cfg.vsCurrency] !== undefined) {
+            rates[idToAsset[cgId]] = data1[cgId][cfg.vsCurrency];
+          }
+        }
+      } else {
+        errors.push('CoinGecko /simple/price: HTTP ' + resp1.getResponseCode());
+      }
+    } catch (e) {
+      errors.push('CoinGecko /simple/price: ' + e.message);
+    }
+  }
+
+  // ── Step 2: Contract-based tokens (COCA) — one call per token ──
+  for (var tokenAsset in cfg.contracts) {
+    var tk = cfg.contracts[tokenAsset];
+    try {
+      var url2 = cfg.baseUrl + '/simple/token_price/' + tk.platform +
+                 '?contract_addresses=' + tk.address +
+                 '&vs_currencies=' + cfg.vsCurrency;
+      var resp2 = UrlFetchApp.fetch(url2, opts);
+      if (resp2.getResponseCode() === 200) {
+        var data2 = JSON.parse(resp2.getContentText());
+        var addrKey = tk.address.toLowerCase();
+        if (data2[addrKey] && data2[addrKey][cfg.vsCurrency] !== undefined) {
+          rates[tokenAsset] = data2[addrKey][cfg.vsCurrency];
+        }
+      } else {
+        errors.push('CoinGecko token ' + tokenAsset + ': HTTP ' + resp2.getResponseCode());
+      }
+    } catch (e) {
+      errors.push('CoinGecko token ' + tokenAsset + ': ' + e.message);
+    }
+  }
+
+  // ── Step 3: Write rates to Rates sheet ──
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Rates');
+  if (!sheet) {
+    errors.push('Rates sheet not found');
+    return { updated: 0, errors: errors };
+  }
+
+  var today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  var existing = sheet.getDataRange().getValues();
+  var updated = 0;
+
+  for (var rateAsset in rates) {
+    var eurRate = rates[rateAsset];
+    var found = false;
+
+    for (var ri = 1; ri < existing.length; ri++) {
+      var rowDate = existing[ri][0];
+      if (rowDate instanceof Date) {
+        rowDate = Utilities.formatDate(rowDate, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+      }
+      if (String(rowDate) === today && String(existing[ri][1]).trim() === rateAsset) {
+        sheet.getRange(ri + 1, 3).setValue(eurRate);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      sheet.appendRow([today, rateAsset, eurRate]);
+    }
+    updated++;
+  }
+
+  return { updated: updated, errors: errors };
 }
 
 // ═══════════════════════════════════════════════════════
