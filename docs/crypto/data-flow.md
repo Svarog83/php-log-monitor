@@ -120,3 +120,5 @@ This ensures consistent state regardless of the order transactions were entered.
 
 6. **Avg cost is global per asset**: Since lots don't follow transfers between wallets,
    Portfolio avg cost aggregates all FIFO lots for an asset regardless of wallet.
+
+**Wallets sheet**: Wallet ID (A), Type (C), Risk (D), Purpose (D), Notes (F). Type: Exchange | Hardware | Software | Custodial. Risk: e.g. Low | Medium | High (used by Summary).

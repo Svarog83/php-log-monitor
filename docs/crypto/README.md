@@ -9,7 +9,11 @@ FIFO lot tracking for German Spekulationsfrist (1-year tax-free holding rule).
 - **Spreadsheet ID**: `1egHbo6p0J0UPjFrqwz89OslRVR11lLlxSJEx8RiH2EM`
 - **MCP Server**: `google-sheets-python` (full API including formatting via batch_update)
 
-## Sheet Structure (8 tabs)
+### Access via MCP
+
+The table can be read and edited **directly via the MCP server** `user-google-sheets-python`: update cells, add formulas, create sheets, batch updates, etc. **Changes to the spreadsheet (structure, formulas, Summary, new sheets) should be made in the first place via MCP** so they are applied live to the document; keep docs (e.g. `formulas.md`) in sync afterwards for reference.
+
+## Sheet Structure (9 tabs)
 
 | # | Sheet | Purpose |
 |---|-------|---------|
@@ -19,8 +23,9 @@ FIFO lot tracking for German Spekulationsfrist (1-year tax-free holding rule).
 | 4 | **Transfers** | Movement of crypto between wallets/exchanges (with chain tracking) |
 | 5 | **FIFOLots** | FIFO lot tracking with automated sell processing |
 | 6 | **Rates** | EUR exchange rates — auto-updated via CoinGecko API |
-| 7 | **Wallets** | Wallet/exchange reference list with types (Exchange, Hardware, Software, Custodial) |
+| 7 | **Wallets** | Wallet/exchange reference: Wallet ID, Type, Risk, Notes |
 | 8 | **ChainBalances** | Breakdown by Asset/Wallet/Chain for self-custody; total balance for exchanges |
+| 9 | **Summary** | Dashboard: allocation by asset/type/risk, KPI (fiat vs portfolio, avg holding), trades stats; **formula-based** — updates automatically when Portfolio or other sheets change (no script) |
 
 ## Data Flow
 
@@ -63,7 +68,7 @@ Trades         ─┘      └──> ChainBalances (total balance for exchanges
 ### Quick Start
 1. Add your data to FiatOperations / Trades / Transfers
 2. Click **Crypto Tracker → Refresh All** in the menu bar
-3. Everything auto-updates: rates, FIFO lots, sell processing, Portfolio, ChainBalances
+3. Everything auto-updates: rates, FIFO lots, sell processing, Portfolio, ChainBalances. Summary (if set up with formulas) updates automatically when data changes.
 
 ### Adding a Fiat Purchase (e.g., buying USDT for RUB via P2P)
 1. Add a row in **FiatOperations**: Date, Buy, RUB, amount, USDT, qty, ...
@@ -102,7 +107,7 @@ Trades         ─┘      └──> ChainBalances (total balance for exchanges
 
 | Menu Item | What it does |
 |-----------|-------------|
-| **Refresh All** | Updates rates → creates FIFO lots → processes FIFO sells → rebuilds Portfolio → rebuilds ChainBalances |
+| **Refresh All** | Updates rates → FIFO lots → sells → Portfolio → ChainBalances |
 | **Update Crypto Rates** | Fetches BTC, ETH, SOL, USDT, USDC, COCA prices from CoinGecko, writes to Rates sheet |
 | **Refresh Portfolio Only** | Scans all data sheets, adds/rebuilds Portfolio rows for all asset/wallet combos |
 | **Refresh Chain Balances Only** | Rebuilds ChainBalances sheet (chain breakdown for wallets, totals for exchanges) |
@@ -122,17 +127,21 @@ Trades         ─┘      └──> ChainBalances (total balance for exchanges
 - Fiat currency rates (RUB/EUR) in the Rates sheet
 - Data entry in FiatOperations, Trades, Transfers
 - FIFO lot wallet tracking: lots stay at purchase wallet (transfer tracking not yet implemented)
+- **Summary sheet**: set up once with formulas and charts from [formulas.md](docs/crypto/formulas.md#summary-formula-based-no-script); then it updates automatically from Portfolio and other sheets
 
 ## Wallets
 
-| Wallet ID | Type | Notes |
-|-----------|------|-------|
-| MEXC | Exchange | RU driving license |
-| KuCoin | Exchange | RU Passport |
-| Ledger | Hardware | Cold storage |
-| HOT | Software | Telegram / Chrome extension |
-| Coca | Custodial | EU crypto card |
-| Wirex | Custodial | EU crypto card, German tax number |
+Columns: **Wallet ID**, **Type**, **Risk**, **Purpose**, **Notes**. Type: Exchange | Hardware | Software | Custodial. Risk: e.g. Low | Medium | High (used by Summary for allocation by risk).
+
+| Wallet ID | Type | Risk | Notes                             |
+|-----------|------|------|-----------------------------------|
+| MEXC      | Exchange | Medium | RU driving license                |
+| KuCoin    | Exchange | Medium | RU Passport                       |
+| Ledger    | Hardware | Low | Cold storage                      |
+| HOT       | Software | Medium | Telegram / Chrome extension       |
+| Coca      | Custodial | Medium | EU crypto card                    |
+| Wirex     | Custodial | Medium | EU crypto card, German tax number |
+| Lost      | Custodial | Critical | To track my losses                |
 
 ## Known Limitations
 
