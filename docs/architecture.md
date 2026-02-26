@@ -65,7 +65,7 @@ The system follows **Clean Architecture** principles with **Domain-Driven Design
 
 ## Technology Stack
 
-- **PHP 8.3**: Modern PHP features and type safety
+- **PHP 8.4**: Modern PHP features and type safety
 - **amphp**: Async programming primitives
 - **danog/loop**: Periodic task execution
 - **Monolog**: Logging framework

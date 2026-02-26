@@ -34,7 +34,7 @@ Create a simple tool in PHP to monitor log files in specified directories, detec
 - Consider using danog/loop package
 
 ### 5. Technical Requirements
-- PHP 8.3+
+- PHP 8.4+
 - SOLID principles
 - DDD (Domain-Driven Design) approach
 - Clean, readable, and modern code

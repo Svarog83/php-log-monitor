@@ -3,10 +3,10 @@
 > Project map for AI agents. Keep this file up-to-date as the project evolves.
 
 ## Project Overview
-Async PHP log monitoring tool that watches directories for log file changes, tracks read positions, and forwards new entries to Monolog/Buggregator. Built with amphp and danog/loop on PHP 8.3.
+Async PHP log monitoring tool that watches directories for log file changes, tracks read positions, and forwards new entries to Monolog/Buggregator. Built with amphp and danog/loop on PHP 8.4.
 
 ## Tech Stack
-- **Language:** PHP 8.3 (strict types)
+- **Language:** PHP 8.4 (strict types)
 - **Async Runtime:** amphp v3 + danog/loop
 - **CLI:** Symfony Console 7.x
 - **Config:** Symfony YAML 7.x

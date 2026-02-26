@@ -2,7 +2,7 @@
 
 > Async log file monitoring tool for PHP — watches directories, tracks positions, forwards entries to Monolog.
 
-A modern, non-blocking log monitoring tool built with PHP 8.3, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog using Clean Architecture and DDD patterns.
+A modern, non-blocking log monitoring tool built with PHP 8.4, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog using Clean Architecture and DDD patterns.
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ projects:
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 - ext-pcntl (for graceful shutdown)
 
 ## Mago Lint

@@ -1,7 +1,7 @@
 # Project: PHP Log Monitor
 
 ## Overview
-A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. It watches log directories for new and changed log files, reads new entries from tracked positions, and forwards them to Monolog handlers (including Buggregator). Designed for production use with multiple simultaneous project monitoring.
+A modern, async log monitoring tool built with PHP 8.4, amphp, and danog/loop. It watches log directories for new and changed log files, reads new entries from tracked positions, and forwards them to Monolog handlers (including Buggregator). Designed for production use with multiple simultaneous project monitoring.
 
 ## Core Features
 - **Async file monitoring** — Non-blocking directory scanning and file reading via amphp
@@ -13,7 +13,7 @@ A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. I
 - **YAML configuration** — Declarative project configuration with pattern-based file discovery
 
 ## Tech Stack
-- **Language:** PHP 8.3 (strict types throughout)
+- **Language:** PHP 8.4 (strict types throughout)
 - **Async Runtime:** amphp v3 + danog/loop (PeriodicLoop)
 - **CLI Framework:** Symfony Console 7.x
 - **Configuration:** Symfony YAML 7.x

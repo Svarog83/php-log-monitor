@@ -4,7 +4,7 @@
 
 ## Quick Context for LLM
 
-This is a **log monitoring tool** built with PHP 8.3, following **Clean Architecture** and **DDD** principles. It monitors log files and forwards entries to Monolog.
+This is a **log monitoring tool** built with PHP 8.4, following **Clean Architecture** and **DDD** principles. It monitors log files and forwards entries to Monolog.
 
 ## Key Architecture Decisions
 
@@ -15,7 +15,7 @@ This is a **log monitoring tool** built with PHP 8.3, following **Clean Architec
 - **danog/loop** for periodic execution
 
 ### 2. Technology Stack
-- **PHP 8.3** with strict types
+- **PHP 8.4** with strict types
 - **amphp** for async primitives
 - **danog/loop** for periodic tasks
 - **Monolog** for logging

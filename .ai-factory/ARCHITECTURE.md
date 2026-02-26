@@ -8,7 +8,7 @@ This architecture was chosen because the project has moderate domain complexity 
 
 ## Decision Rationale
 - **Project type:** Long-running async CLI tool with multiple monitoring strategies
-- **Tech stack:** PHP 8.3, amphp, Symfony Console (no framework container)
+- **Tech stack:** PHP 8.4, amphp, Symfony Console (no framework container)
 - **Key factor:** Multiple storage backends and logging adapters demand clean separation via interfaces
 
 ## Folder Structure
