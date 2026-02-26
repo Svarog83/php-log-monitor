@@ -29,7 +29,7 @@ final readonly class LogEntry
         }
 
         $timestamp = new DateTimeImmutable();
-        if (isset($data['@timestamp'])) {
+        if (isset($data['@timestamp']) && is_string($data['@timestamp'])) {
             $parsedTimestamp = DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.u\Z', $data['@timestamp']);
             if ($parsedTimestamp !== false) {
                 $timestamp = $parsedTimestamp;

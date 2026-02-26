@@ -14,7 +14,7 @@ final class EnvironmentConfiguration
     /** @var array<string, string> */
     private array $env;
 
-    public function __construct(string $envPath = null)
+    public function __construct(string|null $envPath = null)
     {
         $this->env = [];
 

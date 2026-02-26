@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PHP="/opt/homebrew/opt/php@8.4/bin/php"
 CONFIG_FILE="config/projects.yaml"
 LOG_FILE="var/log/monitor.log"
 INTERVAL="1"
@@ -38,12 +39,12 @@ print_info() {
 
 # Function to check if monitor is running
 is_running() {
-    pgrep -f "php src/console.php" > /dev/null 2>&1
+    pgrep -f "${PHP} src/console.php" > /dev/null 2>&1
 }
 
 # Function to get process info
 get_process_info() {
-    ps aux | grep "php src/console.php" | grep -v grep
+    ps aux | grep "${PHP} src/console.php" | grep -v grep
 }
 
 # Function to start the monitor
@@ -61,7 +62,7 @@ start_monitor() {
     
     # Start the monitor
     cd "$PROJECT_DIR"
-    nohup php src/console.php "$CONFIG_FILE" -i "$INTERVAL" $DEBUG_FLAG > "$LOG_FILE" 2>&1 &
+    nohup $PHP src/console.php "$CONFIG_FILE" -i "$INTERVAL" $DEBUG_FLAG > "$LOG_FILE" 2>&1 &
     
     # Wait a moment and check if it started successfully
     sleep 2
@@ -82,7 +83,7 @@ stop_monitor() {
     fi
 
     print_status "Stopping log monitor..."
-    pkill -f "php src/console.php"
+    pkill -f "${PHP} src/console.php"
     
     # Wait a moment and check if it stopped
     sleep 2

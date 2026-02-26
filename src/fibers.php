@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 function asyncHttpGet(string $host, string $path = '/', int $port = 80): Fiber
 {
-    return new Fiber(function () use ($host, $path, $port) {
+    $fiber = new Fiber(function () use ($host, $path, $port): string {
         $errno = $errstr = null;
         $socket = stream_socket_client(
             "tcp://$host:$port",
@@ -52,6 +52,8 @@ function asyncHttpGet(string $host, string $path = '/', int $port = 80): Fiber
         fclose($socket);
         return $response;
     });
+    /** @var Fiber<string, mixed, string, mixed> $fiber */
+    return $fiber;
 }
 
 // Список хостов и путей

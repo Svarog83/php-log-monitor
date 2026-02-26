@@ -78,6 +78,7 @@ final class FilePositionRepository implements PositionRepository
                 return null;
             }
 
+            /** @var array<string, mixed> $data */
             $position = FilePosition::fromArray($data);
 
             $this->debugLogger->success("Position in $storagePath loaded successfully: {$position->position}");
@@ -117,6 +118,7 @@ final class FilePositionRepository implements PositionRepository
                     continue;
                 }
 
+                /** @var array<string, mixed> $data */
                 $position = FilePosition::fromArray($data);
                 $positions[] = $position;
 

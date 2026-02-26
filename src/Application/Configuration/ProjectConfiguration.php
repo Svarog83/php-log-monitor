@@ -54,6 +54,15 @@ final class ProjectConfiguration
                 throw new \InvalidArgumentException('Directories must be an array');
             }
 
+            /** @var list<string> $monitoredDirectories */
+            $monitoredDirectories = [];
+            foreach ($directories as $dir) {
+                if (!is_string($dir)) {
+                    throw new \InvalidArgumentException('Each directory must be a string');
+                }
+                $monitoredDirectories[] = $dir;
+            }
+
             $logPattern = $projectConfig['log_pattern'] ?? 'logstash-*.json';
             if (!is_string($logPattern)) {
                 throw new \InvalidArgumentException('Log pattern must be a string');
@@ -64,11 +73,17 @@ final class ProjectConfiguration
                 throw new \InvalidArgumentException('Position storage configuration must be an array');
             }
 
+            /** @var array<string, mixed> $positionStorageConfig */
+            $positionStorageConfig = [];
+            foreach ($positionStorage as $k => $v) {
+                $positionStorageConfig[is_string($k) ? $k : (string) $k] = $v;
+            }
+
             $projects[$projectName] = new Project(
                 name: $projectName,
-                monitoredDirectories: $directories,
+                monitoredDirectories: $monitoredDirectories,
                 logPattern: $logPattern,
-                positionStorage: $positionStorage,
+                positionStorage: $positionStorageConfig,
             );
         }
 

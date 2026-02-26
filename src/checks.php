@@ -17,7 +17,7 @@ EventLoop::repeat(1.0, function () use (&$lastSize, $path) {
         clearstatcache(true, $path);
         $size = getSize($path); // direct int, no await/yield
 
-        if ($lastSize !== null && $size !== $lastSize) {
+        if ($size !== $lastSize) {
             echo "File size changed: $size bytes\n";
         }
 

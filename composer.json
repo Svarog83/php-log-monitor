@@ -4,7 +4,7 @@
     "type": "project",
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "danog/loop": "^1.1",
         "amphp/amp": "^3.0",
         "amphp/file": "^3.0",
@@ -16,7 +16,7 @@
         "ext-pcntl": "*"
     },
     "require-dev": {
-        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.0"
     },
     "autoload": {

@@ -82,6 +82,7 @@ final class AsyncFilePositionRepository implements PositionRepository
                 return null;
             }
 
+            /** @var array<string, mixed> $data */
             $position = FilePosition::fromArray($data);
 
             $this->debugLogger->success("Position ASYNC in $storagePath loaded successfully: {$position->position}");
@@ -135,6 +136,7 @@ final class AsyncFilePositionRepository implements PositionRepository
                         continue;
                     }
 
+                    /** @var array<string, mixed> $data */
                     $position = FilePosition::fromArray($data);
                     $positions[] = $position;
 
