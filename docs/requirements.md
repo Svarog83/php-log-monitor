@@ -1,3 +1,5 @@
+[Back to README](../README.md) · [Architecture →](architecture.md)
+
 # Requirements
 
 ## Project Goal
@@ -43,4 +45,10 @@ Create a simple tool in PHP to monitor log files in specified directories, detec
 - **Maintainability**: Clean architecture with clear separation of concerns
 - **Extensibility**: Easy to add new features and integrations
 - **Reliability**: Proper error handling and logging
-- **Performance**: Efficient file monitoring with minimal resource usage 
+- **Performance**: Efficient file monitoring with minimal resource usage
+
+## See Also
+
+- [Architecture](architecture.md) — system design and layer responsibilities
+- [Implementation](implementation.md) — how the requirements are realized
+- [Configuration](configuration.md) — setup and configuration options

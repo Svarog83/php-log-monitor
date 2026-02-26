@@ -1,188 +1,85 @@
 # Log Monitor
 
-A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog.
+> Async log file monitoring tool for PHP — watches directories, tracks positions, forwards entries to Monolog.
 
-## Features
+A modern, non-blocking log monitoring tool built with PHP 8.3, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog using Clean Architecture and DDD patterns.
 
-- **Async & Non-blocking**: Uses amphp for efficient async file operations
-- **Configurable**: YAML-based project configuration
-- **Modern Architecture**: Built with SOLID principles and DDD patterns
-- **Multiple Projects**: Monitor multiple projects simultaneously
-- **Real-time Monitoring**: Detects new log files and monitors changes
-- **Position Tracking**: Maintains file positions between runs to avoid reprocessing
-- **Flexible Storage**: Support for different position storage backends (file, Redis, database)
-- **Monolog Integration**: Forwards log entries to Monolog with proper level mapping
+## Quick Start
 
-## Mago lint
-- **/usr/local/bin/mago lint** - to check for issues
-- **/usr/local/bin/mago analyze** - to find type errors
-- **/usr/local/bin/mago fmt --dry-run** - to see formatting suggestions
+```bash
+composer install
+cp config/projects-example.yaml config/projects.yaml
+# Edit config/projects.yaml with your directories
+php src/console.php config/projects.yaml
+```
 
-## Requirements
+## Key Features
 
-- PHP 8.3+
-- Composer
+- **Async & Non-blocking** — amphp-powered async file I/O prevents blocking
+- **Position Tracking** — resumes from last read position between restarts
+- **Multi-Project** — monitor multiple projects simultaneously with independent configs
+- **Flexible Storage** — file, async-file, or cached position backends
+- **Monolog Integration** — forwards parsed entries with proper level mapping
+- **Buggregator Support** — real-time log forwarding for debugging
+- **Graceful Shutdown** — POSIX signal handling with position persistence
 
-## Installation
+## Example
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   composer install
-   ```
+```bash
+# Monitor all projects
+php src/console.php config/projects.yaml
 
-## Configuration
-
-Create a YAML configuration file (e.g., `config/projects.yaml`):
+# Monitor specific project with 0.5s interval and debug output
+php src/console.php config/projects.yaml --project=myapp --interval=0.5 --debug
+```
 
 ```yaml
+# config/projects.yaml
 projects:
   myapp:
     directories:
       - /var/log/myapp
-      - /opt/myapp/logs
     log_pattern: "logstash-*.json"
     position_storage:
       type: "cached"
       path: "var/positions"
       save_interval_seconds: 30
-  
-  api:
-    directories:
-      - /var/log/api
-    log_pattern: "api-*.json"
-    position_storage:
-      type: "cached"
-      path: "var/positions"
-      save_interval_seconds: 30
 ```
 
-📁 **See [config/projects-example.yaml](./config/projects-example.yaml) for a complete example with all options**
+## Requirements
 
-## Usage
+- PHP 8.3+
+- ext-pcntl (for graceful shutdown)
 
-### Basic Usage
+## Mago Lint
 
-#### Monitor all projects:
-```bash
-php src/console.php config/projects.yaml
-```
+- `/usr/local/bin/mago lint` — check for issues
+- `/usr/local/bin/mago analyze` — find type errors
+- `/usr/local/bin/mago fmt --dry-run` — see formatting suggestions
 
-#### Monitor specific project:
-```bash
-php src/console.php config/projects.yaml --project=myapp
-```
-
-#### Custom scan interval:
-```bash
-php src/console.php config/projects.yaml --interval=0.5
-```
-
-#### Debug mode:
-```bash
-php src/console.php config/projects.yaml --debug
-```
-
-### Background Execution (Production)
-
-For production environments, run the monitor in the background:
-
-#### Start the monitor:
-```bash
-nohup php src/console.php config/projects.yaml -i 1 > var/log/monitor.log 2>&1 &
-```
-
-#### Check if running:
-```bash
-ps aux | grep "php src/console.php" | grep -v grep
-```
-
-#### View logs:
-```bash
-tail -f var/log/monitor.log
-```
-
-#### Stop the monitor:
-```bash
-pkill -f "php src/console.php"
-```
-
-#### Restart the monitor:
-```bash
-pkill -f "php src/console.php" && nohup php src/console.php config/projects.yaml -i 1 > var/log/monitor.log 2>&1 &
-```
-
-### Using the Management Script
-
-For easier management, use the provided script:
-
-```bash
-# Start the monitor
-./scripts/monitor.sh start
-
-# Start with debug output
-./scripts/monitor.sh start --debug
-
-# Check status
-./scripts/monitor.sh status
-
-# View logs
-./scripts/monitor.sh logs
-
-# Stop the monitor
-./scripts/monitor.sh stop
-
-# Restart the monitor
-./scripts/monitor.sh restart
-
-# Restart with debug output
-./scripts/monitor.sh restart --debug
-```
-
-📖 **For detailed deployment instructions, see [Deployment Guide](./docs/deployment.md)**
-
-## Architecture
-
-The application follows Clean Architecture principles with clear separation of concerns:
-
-- **Domain Layer**: Core business logic and entities
-- **Application Layer**: Use cases and orchestration
-- **Infrastructure Layer**: External concerns (file system, logging)
-- **Console Layer**: CLI interface
-
-### Key Components
-
-- `LogFile`: Value object representing a log file
-- `Project`: Aggregate root for project configuration
-- `LogMonitor`: Main application service using danog/loop
-- `LogFileFinder`: Async file system operations
-- `MonologAdapter`: Integration with Monolog
+---
 
 ## Documentation
 
-📚 **Comprehensive documentation** is available in the [`docs/`](./docs/) folder:
-
-- [Requirements](./docs/requirements.md) - Project specifications and goals
-- [Architecture](./docs/architecture.md) - System design and patterns
-- [Implementation](./docs/implementation.md) - Technical implementation details
-- [API Reference](./docs/api-reference.md) - Key classes and interfaces
-- [Configuration](./docs/configuration.md) - Configuration format and options
-- [Position Tracking](./docs/position-tracking.md) - Position tracking feature guide
-- [Deployment](./docs/deployment.md) - Production deployment and operations guide
-- [LLM Guide](./docs/llm-guide.md) - Quick reference for AI assistants
+| Guide | Description |
+|-------|-------------|
+| [Requirements](docs/requirements.md) | Project specifications and goals |
+| [Architecture](docs/architecture.md) | System design, layers, and patterns |
+| [Implementation](docs/implementation.md) | Technical implementation details |
+| [API Reference](docs/api-reference.md) | Key classes and interfaces |
+| [Configuration](docs/configuration.md) | YAML config, env vars, CLI options |
+| [Position Tracking](docs/position-tracking.md) | Position tracking feature guide |
+| [Deployment](docs/deployment.md) | Production deployment and operations |
+| [Graceful Shutdown](docs/graceful-shutdown.md) | Signal handling and safe shutdown |
+| [LLM Guide](docs/llm-guide.md) | Quick reference for AI assistants |
 
 ## Development
 
-### Running PHPStan (Level 9):
 ```bash
-./vendor/bin/phpstan analyse
-```
-
-### Running Tests:
-```bash
-./vendor/bin/phpunit
+./vendor/bin/phpstan analyse        # Static analysis (level 9)
+./vendor/bin/phpunit                # Run tests
 ```
 
 ## License
 
-MIT 
+MIT

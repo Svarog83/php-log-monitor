@@ -1,25 +1,26 @@
-# Log Monitor - Documentation
+# Log Monitor — Documentation
 
-This documentation serves as a memory bank for LLM interactions and project maintenance.
+> Comprehensive documentation for the PHP Log Monitor project.
 
 ## Documentation Structure
 
-- **[Requirements](./requirements.md)** - Original requirements and specifications
-- **[Architecture](./architecture.md)** - System architecture and design decisions
-- **[Implementation](./implementation.md)** - Implementation details and approaches
-- **[API Reference](./api-reference.md)** - Key classes and interfaces
-- **[Configuration](./configuration.md)** - Configuration format and options
-- **[Position Tracking](./position-tracking.md)** - Position tracking feature guide
-- **[Deployment](./deployment.md)** - Production deployment and operations guide
+| Guide | Description |
+|-------|-------------|
+| [Requirements](requirements.md) | Project specifications and goals |
+| [Architecture](architecture.md) | System design, layers, and patterns |
+| [Implementation](implementation.md) | Technical implementation details |
+| [API Reference](api-reference.md) | Key classes and interfaces |
+| [Configuration](configuration.md) | YAML config, env vars, CLI options |
+| [Position Tracking](position-tracking.md) | Position tracking feature guide |
+| [Deployment](deployment.md) | Production deployment and operations |
+| [Graceful Shutdown](graceful-shutdown.md) | Signal handling and safe shutdown |
+| [LLM Guide](llm-guide.md) | Quick reference for AI assistants |
 
-## Quick Start
+## Suggested Reading Order
 
-1. Read [Requirements](./requirements.md) to understand the project goals
-2. Review [Architecture](./architecture.md) for system design
-3. Check [Implementation](./implementation.md) for technical details
-4. Use [Configuration](./configuration.md) for setup guidance
-5. Follow [Deployment](./deployment.md) for production deployment
+1. [Requirements](requirements.md) — understand the project goals
+2. [Architecture](architecture.md) — system design and layers
+3. [Configuration](configuration.md) — setup and configure
+4. [Deployment](deployment.md) — run in production
 
-## Project Overview
-
-A modern, async log monitoring tool built with PHP 8.3, amphp, and danog/loop. Monitors log files for changes and forwards new log entries to Monolog using SOLID principles and DDD patterns. 
+[← Back to README](../README.md)

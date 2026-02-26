@@ -1,3 +1,5 @@
+[← Architecture](architecture.md) · [Back to README](../README.md) · [API Reference →](api-reference.md)
+
 # Implementation
 
 ## Implementation Strategy
@@ -152,4 +154,10 @@ The solution uses a **periodic monitoring approach** with **true async file oper
 2. **Integration Tests**: Test component interactions
 3. **Configuration Tests**: Validate YAML parsing
 4. **Error Scenarios**: Test error handling paths
-5. **Environment Tests**: Test configuration loading 
+5. **Environment Tests**: Test configuration loading
+
+## See Also
+
+- [Architecture](architecture.md) — system design and patterns
+- [API Reference](api-reference.md) — key classes and interfaces
+- [Configuration](configuration.md) — YAML config and environment variables

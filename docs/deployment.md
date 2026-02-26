@@ -1,3 +1,5 @@
+[← Position Tracking](position-tracking.md) · [Back to README](../README.md) · [Graceful Shutdown →](graceful-shutdown.md)
+
 # Deployment & Operations Guide
 
 This guide covers how to deploy and operate the Log Monitor in production environments.
@@ -339,4 +341,10 @@ For easier management, use the provided script:
 
 # Restart with debug output
 ./scripts/monitor.sh restart --debug
-``` 
+```
+
+## See Also
+
+- [Configuration](configuration.md) — YAML config, env vars, CLI options
+- [Graceful Shutdown](graceful-shutdown.md) — signal handling and safe shutdown
+- [Position Tracking](position-tracking.md) — position persistence between restarts

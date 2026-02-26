@@ -1,3 +1,5 @@
+[← Implementation](implementation.md) · [Back to README](../README.md) · [Configuration →](configuration.md)
+
 # API Reference
 
 ## Core Domain Models
@@ -128,12 +130,14 @@ final class LogMonitor
         private Project $project,
         private LogFileRepository $logFileRepository,
         private MonologAdapter $logger,
-        private float $scanInterval = 1.0
+        private DebugLogger $debugLogger,
+        private float $scanInterval = 1.0,
     );
     
     public function setPositionTracker(PositionTracker $positionTracker): void;
     public function start(): void;
     public function stop(): void;
+    public function forceSavePosition(): void;
     public function isRunning(): bool;
 }
 ```
@@ -167,7 +171,10 @@ final class LogFileFinder implements LogFileRepository
 ```php
 final class MonologAdapter
 {
-    public function __construct(private Logger $logger);
+    public function __construct(
+        private Logger $logger,
+        private Project $project,
+    );
     public function logEntry(LogEntry $entry): void;
     private function mapLevel(string $level): Level;
 }
@@ -214,4 +221,10 @@ $projects = $config->getProjects();
 ### CLI Usage
 ```bash
 php src/console.php config.yaml --project=myapp --interval=0.5
-``` 
+```
+
+## See Also
+
+- [Implementation](implementation.md) — technical implementation details
+- [Architecture](architecture.md) — system design and layer responsibilities
+- [Configuration](configuration.md) — YAML config, env vars, CLI options

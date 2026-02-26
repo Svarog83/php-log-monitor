@@ -1,3 +1,5 @@
+[← Configuration](configuration.md) · [Back to README](../README.md) · [Deployment →](deployment.md)
+
 # Position Tracking
 
 The log monitor now supports position tracking to maintain the last read position in each log file between different runs of the tool. This ensures that when you stop and restart the monitor, it continues from where it left off instead of re-processing old log entries.
@@ -329,4 +331,10 @@ Look for log entries with the 📍 emoji for position-related information.
 - **Position Compression**: Compress position data for large files
 - **Position Encryption**: Encrypt sensitive position data
 - **Position Analytics**: Track position usage patterns
-- **Distributed Storage**: Support for distributed position storage 
+- **Distributed Storage**: Support for distributed position storage
+
+## See Also
+
+- [Configuration](configuration.md) — YAML config and storage options
+- [Graceful Shutdown](graceful-shutdown.md) — position saving during shutdown
+- [Deployment](deployment.md) — production deployment guide

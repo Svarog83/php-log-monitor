@@ -1,3 +1,5 @@
+[← Requirements](requirements.md) · [Back to README](../README.md) · [Implementation →](implementation.md)
+
 # Architecture
 
 ## Architectural Approach
@@ -87,4 +89,10 @@ The system uses an **efficient single-file monitoring approach** with **position
 - **Open/Closed**: Open for extension, closed for modification
 - **Liskov Substitution**: Interfaces can be substituted
 - **Interface Segregation**: Focused, specific interfaces
-- **Dependency Inversion**: Depend on abstractions, not concretions 
+- **Dependency Inversion**: Depend on abstractions, not concretions
+
+## See Also
+
+- [Requirements](requirements.md) — project specifications and goals
+- [Implementation](implementation.md) — technical implementation details
+- [API Reference](api-reference.md) — key classes and interfaces

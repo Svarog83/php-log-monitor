@@ -1,3 +1,5 @@
+[← Graceful Shutdown](graceful-shutdown.md) · [Back to README](../README.md)
+
 # LLM Interaction Guide
 
 ## Quick Context for LLM
@@ -9,7 +11,7 @@ This is a **log monitoring tool** built with PHP 8.3, following **Clean Architec
 ### 1. File Monitoring Approach
 - **Periodic scanning** (not file system events)
 - **File size tracking** for change detection
-- **Native PHP file operations** (not async file I/O)
+- **Async file I/O** via amphp/file for non-blocking operations
 - **danog/loop** for periodic execution
 
 ### 2. Technology Stack
@@ -119,4 +121,10 @@ src/
 2. **Follow existing patterns** in similar files
 3. **Update tests** for new functionality
 4. **Run PHPStan** to ensure quality
-5. **Update documentation** if needed 
+5. **Update documentation** if needed
+
+## See Also
+
+- [Architecture](architecture.md) — system design and layer responsibilities
+- [API Reference](api-reference.md) — key classes and interfaces
+- [Configuration](configuration.md) — YAML config, env vars, CLI options

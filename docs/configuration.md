@@ -1,3 +1,5 @@
+[← API Reference](api-reference.md) · [Back to README](../README.md) · [Position Tracking →](position-tracking.md)
+
 # Configuration
 
 ## Environment Configuration
@@ -81,8 +83,9 @@ Position tracking can be configured per project:
 
 ```yaml
 position_storage:
-  type: "async-file"  # "file", "async-file", "redis", "database"
+  type: "cached"  # "file", "async-file", "cached"
   path: "var/positions"  # Storage path for file-based storage
+  save_interval_seconds: 30  # For cached storage only
 ```
 
 #### Storage Types
@@ -91,14 +94,13 @@ position_storage:
 |------|-------------|-------------|---------------|
 | `file` | Synchronous file storage | ⚠️ May block | Development/Testing |
 | `async-file` | Asynchronous file storage | ✅ Non-blocking | Production |
-| `redis` | Redis storage | ✅ High performance | Future |
-| `database` | Database storage | ✅ Scalable | Future |
+| `cached` | In-memory cache + periodic flush | ✅ Fastest | Production (recommended) |
 
 #### Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `type` | string | `file` | Storage backend type |
+| `type` | string | `cached` | Storage backend type |
 | `path` | string | `var/positions` | Storage path (file storage) |
 
 ## CLI Usage
@@ -126,6 +128,7 @@ php src/console.php config/projects.yaml --env-file=.env.local
 | `--project` | `-p` | All projects | Specific project to monitor |
 | `--interval` | `-i` | `1.0` | Scan interval in seconds |
 | `--env-file` | `-e` | `.env` | Environment file path |
+| `--debug` | `-d` | Off | Enable debug output |
 
 ## Logging Configuration
 
@@ -219,4 +222,10 @@ VAR_DUMPER_SERVER=monitoring.internal:9912
 LOG_PATH="/var/log/monitor-%s.json"
 BUGGREGATOR_HOST=monitoring.internal
 BUGGREGATOR_PORT=9913
-``` 
+```
+
+## See Also
+
+- [Position Tracking](position-tracking.md) — position storage backends in detail
+- [Deployment](deployment.md) — production deployment and operations
+- [API Reference](api-reference.md) — key classes and interfaces
